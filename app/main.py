@@ -9,7 +9,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import cache, pipeline, threatstore
+from . import cache, generate, pipeline, threatstore
 from .config import ROOT, settings
 
 app = FastAPI(title="LexProof", version="0.2")
@@ -57,6 +57,24 @@ def sample():
     return {"text": (ROOT / "samples" / "foi_request.txt").read_text(encoding="utf-8")}
 
 
+class GenerateRequest(BaseModel):
+    area: str
+    country: str = "UK"
+
+
+@app.get("/api/generate/options")
+def generate_options():
+    return generate.options()
+
+
+@app.post("/api/generate")
+def generate_letter(req: GenerateRequest):
+    try:
+        return generate.generate(req.area, req.country)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
 @app.post("/api/analyze")
 def analyze(req: AnalyzeRequest):
     job_id = uuid.uuid4().hex[:12]
@@ -95,6 +113,17 @@ def threatmap(layer: str = "hostile", frm: str | None = Query(None, alias="from"
     if a > b:
         a, b = b, a
     return threatstore.query(a, b, layer, None if types is None else [t for t in types.split(",") if t])
+
+
+@app.middleware("http")
+async def revalidate_static(request, call_next):
+    """The page, scripts and styles change often: make browsers check for a newer copy every time
+    (a cheap 304 when unchanged), so a stale app.js never sits behind new HTML."""
+    resp = await call_next(request)
+    path = request.url.path
+    if path == "/" or path.endswith((".js", ".css", ".html")):
+        resp.headers["Cache-Control"] = "no-cache"
+    return resp
 
 
 app.mount("/static", StaticFiles(directory=ROOT / "static"), name="static")

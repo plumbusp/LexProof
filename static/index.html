@@ -109,6 +109,31 @@
 
 <!-- Complaint Reviewer Panel -->
 <main class="view page" id="view-panel" data-view-section="panel" hidden>
+  <section class="card gen" id="gen">
+    <div class="gen-bar">
+      <div class="gen-intro">
+        <span class="gen-title">Need a letter to test?</span>
+        <span class="gen-sub">Generate a realistic complaint that quotes real, misquoted and invented law.</span>
+      </div>
+      <button class="btn primary" id="btn-gen" type="button" aria-expanded="false" aria-controls="gen-body">
+        <span class="icon">edit_note</span>Generate complaint</button>
+    </div>
+    <div class="gen-body" id="gen-body" hidden>
+      <div class="gen-row">
+        <span class="gen-label">Country</span>
+        <div class="gen-country">
+          <span class="gen-country-name"><span class="gen-cc">UK</span>United Kingdom</span>
+          <span class="gen-note">This demo is built around UK legislation. The app can later be extended to work in any European country.</span>
+        </div>
+      </div>
+      <div class="gen-row">
+        <span class="gen-label">Area</span>
+        <div class="gen-areas" id="gen-areas"></div>
+      </div>
+    </div>
+    <div class="gen-status" id="gen-status" hidden></div>
+  </section>
+
   <section class="kpis" id="kpis" hidden></section>
   <div class="warn-line" id="warn" hidden></div>
 

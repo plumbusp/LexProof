@@ -165,6 +165,45 @@
   $("#btn-theme").onclick = () => setTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
   $("#btn-sample").onclick = async () => { $("#input").value = (await api("/api/sample")).text; };
   $("#btn-edit").onclick = () => { $("#input-wrap").hidden = false; $("#letter").hidden = true; $("#btn-edit").hidden = true; };
+
+  // ---------- generate a test complaint (UK only in this demo)
+  function genStatus(html, err) { const el = $("#gen-status"); el.hidden = !html; el.innerHTML = html; el.classList.toggle("err", !!err); }
+  function genOpen(open) {
+    $("#gen-body").hidden = !open;
+    $("#btn-gen").setAttribute("aria-expanded", String(open));
+  }
+  $("#btn-gen").onclick = () => genOpen($("#gen-body").hidden);
+  async function genAreas() {
+    const { areas } = await api("/api/generate/options");
+    $("#gen-areas").innerHTML = areas.map((a) => `
+      <button type="button" class="gen-area" data-area="${esc(a.id)}">
+        <span class="gen-area-head"><span class="gen-short">${esc(a.short)}</span><span class="gen-name">${esc(a.name)}</span></span>
+        <span class="gen-law">${esc(a.law)}</span>
+        <span class="gen-about">${esc(a.about)}</span>
+      </button>`).join("");
+  }
+  $("#gen-areas").addEventListener("click", async (e) => {
+    const b = e.target.closest(".gen-area");
+    if (!b) return;
+    const name = `${b.querySelector(".gen-short").textContent} (${b.querySelector(".gen-name").textContent})`;
+    document.querySelectorAll(".gen-area").forEach((x) => { x.disabled = true; x.classList.toggle("busy", x === b); });
+    genStatus(`<span class="spin"></span>Writing a ${esc(name)} letter…`);
+    try {
+      const r = await api("/api/generate", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ area: b.dataset.area, country: "UK" }) });
+      $("#input").value = r.text;
+      $("#input-wrap").hidden = false; $("#letter").hidden = true; $("#btn-edit").hidden = true;
+      genOpen(false);
+      genStatus(`<span class="icon">check_circle</span>${esc(name)} letter ready${r.source === "template" ? " (built-in example)" : ""}. Press <b>Check</b> to see every law it cites checked.`);
+      $("#btn-run").classList.add("pulse");
+      setTimeout(() => $("#btn-run").classList.remove("pulse"), 4000);
+      $("#input").scrollIntoView({ behavior: "smooth", block: "center" });
+    } catch (err) {
+      genStatus(`Could not generate a letter: ${esc(err.message)}`, true);
+    }
+    document.querySelectorAll(".gen-area").forEach((x) => { x.disabled = false; x.classList.remove("busy"); });
+  });
+  genAreas().catch(() => genStatus("Could not load the letter types.", true));
   $("#btn-copy").onclick = async (e) => {
     try { await navigator.clipboard.writeText($("#draft").innerText); e.target.textContent = "Copied"; } catch (_) { e.target.textContent = "Select and copy"; }
     setTimeout(() => (e.target.textContent = "Copy"), 2000);
