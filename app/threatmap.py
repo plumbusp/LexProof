@@ -118,12 +118,13 @@ def run_plan(plan: list[dict], workers: int = 4) -> None:
     client = _exa()
     todo = [r for r in plan if r["id"] not in done_ids()]
     print(f"{len(plan) - len(todo)} already stored, {len(todo)} to fetch", flush=True)
-    lock, n_ok, n_err = threading.Lock(), 0, 0
+    lock, n_ok, n_err, cost = threading.Lock(), 0, 0, 0.0
 
     def one(r):
         resp = client.search(r["query"], **r["kwargs"])
         return {**{k: r[k] for k in ("id", "month", "country", "group", "query")}, "params": r["kwargs"],
                 "fetched_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                "cost_usd": getattr(getattr(resp, "cost_dollars", None), "total", None),
                 "results": [_res(x) for x in resp.results]}
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -141,9 +142,10 @@ def run_plan(plan: list[dict], workers: int = 4) -> None:
                 out.write(json.dumps(row, ensure_ascii=False) + "\n")
                 out.flush()
                 n_ok += 1
+                cost += row["cost_usd"] or 0
                 if n_ok % 50 == 0:
-                    print(f"  {n_ok}/{len(todo)} stored", flush=True)
-    print(f"done: {n_ok} stored, {n_err} failed (re-run to retry the failed ones) -> {RESULTS}")
+                    print(f"  {n_ok}/{len(todo)} stored, ${cost:.3f} so far", flush=True)
+    print(f"done: {n_ok} stored, {n_err} failed (re-run to retry the failed ones), Exa cost ${cost:.3f} -> {RESULTS}")
 
 
 def domain(url: str) -> str:
@@ -179,12 +181,39 @@ def level(e: dict) -> int:
     return 1
 
 
-def country_levels(events: list[dict]) -> dict[str, int]:
-    """Highest level per country. T6 (media targets) never raises a country (plan section 5)."""
-    out: dict[str, int] = {}
+def with_levels(events: list[dict], layer: str = "hostile") -> list[dict]:
+    """Copies of the events with `level` set. Level 4 needs two source domains, so domains are
+    pooled per country and type first. The AI-complaint layer has no hostile level (always 0)."""
+    pool: dict[tuple, set] = {}
     for e in events:
-        if valid(e) and e.get("type") != "T6":
-            out[e["country"]] = max(out.get(e["country"], 0), level(e))
+        pool.setdefault((e["country"], e.get("type")), set()).add(e.get("domain") or domain(e["url"]))
+    out = []
+    for e in events:
+        c = {**e, "domains": sorted(pool[(e["country"], e.get("type"))])}
+        c["level"] = level(c) if layer == "hostile" else 0
+        out.append(c)
+    return out
+
+
+def _bucket(n: int) -> int:
+    return 1 if n <= 1 else 2 if n == 2 else 3 if n <= 4 else 4
+
+
+def country_levels(events: list[dict], layer: str = "hostile") -> dict[str, int]:
+    """Level per country with at least one valid event.
+    hostile: highest event level; T6 (media targets) never raises a country (plan section 5).
+    precursor (AI complaints by real people): NOT hostile. Provisional shading by the number of
+    different source sites (1, 2, 3-4, 5+); the plan gives this layer no ladder."""
+    evs = [e for e in with_levels([e for e in events if valid(e)], layer)]
+    out: dict[str, int] = {}
+    if layer == "precursor":
+        sites: dict[str, set] = {}
+        for e in evs:
+            sites.setdefault(e["country"], set()).add(e.get("domain") or domain(e["url"]))
+        return {c: _bucket(len(s)) for c, s in sites.items()}
+    for e in evs:
+        if e.get("type") != "T6":
+            out[e["country"]] = max(out.get(e["country"], 0), e["level"])
     return out
 
 
@@ -240,9 +269,14 @@ if __name__ == "__main__":
     ap.add_argument("--days", type=int, default=7)
     ap.add_argument("--plan", choices=["europe", "countries", "full"], help="write the monthly 2024-2026 request plan; call nothing")
     ap.add_argument("--run", choices=["europe", "countries", "full"], help="call Exa for the monthly plan and store results (spends credits)")
+    ap.add_argument("--month", help="only this month, e.g. 2026-10")
     a = ap.parse_args()
     if a.plan or a.run:
         plan = build_plan(a.plan or a.run)
+        if a.month:
+            plan = [r for r in plan if r["month"] == a.month]
+            if not plan:
+                raise SystemExit(f"no requests for month {a.month}")
         OUT_DIR.mkdir(parents=True, exist_ok=True)
         PLAN_FILE.write_text(json.dumps(plan, indent=1, ensure_ascii=False), encoding="utf-8")
         ms = sorted({r["month"] for r in plan})

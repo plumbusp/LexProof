@@ -27,6 +27,20 @@ Copy-Item .env.example .env      # add EXA_API_KEY, AI_API_KEY (Gemini) and AI_M
 First time on a new machine: `python -m venv .venv` then `.venv\Scripts\pip install -r requirements.txt`.
 Tests: `.venv\Scripts\python -m pytest -q`
 
+## Regional Abuse Map (saved data, no live calls)
+
+The map page only reads local files in `data/threatmap/` (gitignored). Picking another month range, layer or type just filters them.
+
+```
+Exa (once, costs credits)   python -m app.threatmap --run countries --month 2026-10   -> exa_results.jsonl
+Gemini (once, resumable)    python -m app.threatextract --run                         -> extractions.jsonl
+map                         GET /api/threatmap?layer=hostile&from=2026-04&to=2026-10&types=T3,T5
+```
+
+Code sets every evidence level (`app/threatmap.py`); Gemini only fills fields, and an event is kept only if its quote
+is really in the saved article text. The event types are a working reading of the plan (T3, T5, T6); T1, T2, T4 are unused
+until the taxonomy file is added.
+
 ## Files
 
 | File | What it does |

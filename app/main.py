@@ -1,14 +1,15 @@
 """HTTP API. Analysis runs as a background job; the UI polls for progress."""
+import re
 import threading
 import uuid
 from datetime import datetime, timezone
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import cache, pipeline
+from . import cache, pipeline, threatstore
 from .config import ROOT, settings
 
 app = FastAPI(title="Complaint citation checker", version="0.2")
@@ -75,6 +76,25 @@ def job(job_id: str):
     if not j:
         raise HTTPException(404, "job not found")
     return j
+
+
+@app.get("/api/threatmap")
+def threatmap(layer: str = "hostile", frm: str | None = Query(None, alias="from"), to: str | None = None,
+              types: str | None = None):
+    """Regional Abuse Map. Reads saved files only (no Exa, no Gemini); from/to are months 'YYYY-MM'
+    (default: everything searched); types is a comma list like T3,T5, empty = none, absent = all."""
+    months = threatstore.months_available()
+    if layer not in ("hostile", "precursor"):
+        raise HTTPException(400, "layer must be hostile or precursor")
+    for m in (frm, to):
+        if m is not None and not re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", m):
+            raise HTTPException(400, "from/to must look like 2026-10")
+    if not months:
+        raise HTTPException(404, "no saved map data (data/threatmap is empty)")
+    a, b = frm or months[0], to or months[-1]
+    if a > b:
+        a, b = b, a
+    return threatstore.query(a, b, layer, None if types is None else [t for t in types.split(",") if t])
 
 
 app.mount("/static", StaticFiles(directory=ROOT / "static"), name="static")
