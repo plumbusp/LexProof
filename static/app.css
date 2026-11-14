@@ -371,6 +371,8 @@ body[data-view="home"] .topbar { background: color-mix(in srgb, var(--panel) 70%
 .ev-target { font-size: 13px; font-weight: 500; }
 .ev-tags { display: flex; flex-wrap: wrap; gap: 4px; }
 .tag { padding: 1px 6px; font-size: 10px; color: var(--muted); border: 1px solid var(--border-strong); background: var(--subtle); }
+.ev-tr { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin-top: -4px; }
+.linkish { padding: 0; border: 0; background: none; font: inherit; color: var(--text); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
 .tag.type, .tag.lvl { font-family: var(--mono); font-weight: 600; color: var(--text); }
 .tag.warn { color: #92400E; border-color: #D97706; background: #FEF3C7; }
 :root[data-theme="dark"] .tag.warn { color: #F0A63A; border-color: #F0A63A; background: transparent; }

@@ -9,7 +9,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import cache, generate, pipeline, threatstore
+from . import cache, generate, pipeline, threatdeep, threatmap as tm, threatstore
 from .config import ROOT, settings
 
 app = FastAPI(title="LexProof", version="0.2")
@@ -109,6 +109,38 @@ def threatmap(layer: str = "hostile", frm: str | None = Query(None, alias="from"
     if a > b:
         a, b = b, a
     return threatstore.query(a, b, layer, None if types is None else [t for t in types.split(",") if t])
+
+
+class InvestigateRequest(BaseModel):
+    country: str
+
+
+def _investigate(job_id, country):
+    def progress(step, **kw):
+        with _lock:
+            _jobs[job_id]["progress"].append({"step": step, "at": datetime.now(timezone.utc).isoformat(), **kw})
+    try:
+        _set(job_id, status="done", result=threatdeep.investigate(country, progress))
+    except Exception as e:  # shown in the side panel; the saved map is unchanged
+        _set(job_id, status="error", error=str(e)[:300])
+
+
+@app.post("/api/threatmap/investigate")
+def investigate(req: InvestigateRequest):
+    """Live Exa Agent run on one country (spends Exa credits, ~$0.05). New events pass the same quote check."""
+    if req.country not in tm.SCOPE:
+        raise HTTPException(400, "country not in scope")
+    if not settings.exa_enabled:
+        raise HTTPException(503, "EXA_API_KEY not set")
+    with _lock:
+        for j in _jobs.values():
+            if j.get("kind") == "investigate" and j["status"] == "running":
+                return {"job_id": j["id"]}   # one agent run at a time
+        job_id = uuid.uuid4().hex[:12]
+        _jobs[job_id] = {"id": job_id, "kind": "investigate", "country": req.country, "status": "running",
+                         "progress": [], "result": None, "error": None}
+    threading.Thread(target=_investigate, args=(job_id, req.country), daemon=True).start()
+    return {"job_id": job_id}
 
 
 @app.middleware("http")

@@ -36,6 +36,8 @@
   let boot = "idle";                       // idle | loading | ready
   let layer = "hostile", frm = null, to = null, types = null; // types: null = all, [] = none
   let data = null, selected = null, seq = 0, showAll = false, centroids = {};
+  const original = new Set(); // ids of events whose quote is shown in its original language
+  const langName = (c) => { try { return new Intl.DisplayNames(["en"], { type: "language" }).of(c); } catch { return c; } };
 
   const loadScript = (src) => new Promise((ok, fail) => {
     const s = document.createElement("script");
@@ -199,9 +201,18 @@
       <div class="ev-top"><span class="ev-date">${esc(dayName(e.date_start))}</span><span class="tag type">${esc(e.type)}</span>${layer === "hostile" && e.type !== "T6" ? `<span class="tag lvl">L${e.level}</span>` : ""}${e.weak_source ? `<span class="tag warn">unverified source</span>` : ""}</div>
       <div class="ev-target">${esc(e.target || "Target not stated")}${e.volume ? ` · <span class="mono">${esc(e.volume)}</span>` : ""}</div>
       <div class="ev-tags">${tags}</div>
-      <blockquote>“${esc(e.quote)}”</blockquote>
+      ${quoteBlock(e)}
       ${/^https?:\/\//i.test(e.url) ? `<a class="ev-src" href="${esc(e.url)}" target="_blank" rel="noopener noreferrer">${esc(e.domain)}<span class="icon">open_in_new</span></a>` : `<span class="ev-src">${esc(e.domain)}</span>`}
     </article>`;
+  }
+
+  // English by default when Gemini translated it; the original (the text the quote check ran on) is one click away.
+  function quoteBlock(e) {
+    if (!e.quote_en) return `<blockquote>“${esc(e.quote)}”</blockquote>`;
+    const orig = original.has(e.id), lang = langName(e.lang || "");
+    return `<blockquote${orig ? ` lang="${esc(e.lang || "")}"` : ""}>“${esc(orig ? e.quote : e.quote_en)}”</blockquote>
+      <div class="ev-tr fine">${orig ? `Original, ${esc(lang)}` : `Translated from ${esc(lang)} by ${e.tr_by === "claude" ? "Claude" : "Gemini"}`}
+        <button type="button" class="linkish" data-orig="${esc(e.id)}" aria-pressed="${orig}">${orig ? "Show English" : "Show original"}</button></div>`;
   }
 
   function renderSide() {
@@ -217,6 +228,8 @@
   document.addEventListener("click", (e) => {
     const t = e.target;
     if (t.closest("#more")) { showAll = true; renderSide(); return; }
+    const tr = t.closest("[data-orig]");
+    if (tr) { const id = tr.dataset.orig; original.has(id) ? original.delete(id) : original.add(id); renderSide(); return; }
     const seg = t.closest(".seg-btn");
     if (seg && seg.dataset.layer !== layer) { layer = seg.dataset.layer; types = null; load(); return; }
     const chip = t.closest(".chip-btn");

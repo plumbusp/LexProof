@@ -18,6 +18,7 @@ from functools import lru_cache
 from pathlib import Path
 
 from . import threatmap as tm
+from . import threattranslate
 
 EXTRACTIONS = tm.OUT_DIR / "extractions.jsonl"
 SNAPSHOT = Path(__file__).resolve().parent.parent / "mapdata" / "snapshot.json"
@@ -49,8 +50,8 @@ def _results_index(stamp: float) -> dict:
     saved = ""
     for row in read_jsonl(tm.RESULTS):
         saved = max(saved, row.get("fetched_at", ""))
-        if row.get("country"):
-            cov.setdefault(row["country"], set()).add(row["month"])
+        if row.get("country"):  # a deep sweep covers a whole window in one call ("months")
+            cov.setdefault(row["country"], set()).update(row.get("months", [row["month"]]))
         for r in row["results"]:  # the same article comes back from many searches
             arts.setdefault(r["url"], {k: r[k] for k in ("url", "title", "published_date", "highlights")})
     return {"articles": arts, "coverage": cov, "saved_at": saved[:10]}
@@ -137,7 +138,8 @@ def _view() -> dict:
 
 
 def events() -> list[dict]:
-    return [dict(e) for e in _view()["events"]]
+    """English translations (display only) are attached here; the original quote stays the proof."""
+    return [threattranslate.attach(dict(e)) for e in _view()["events"]]
 
 
 def months_available() -> list[str]:
@@ -154,7 +156,7 @@ def export(path: Path | None = None) -> dict:
     """Writes the small, deployable snapshot: events (short quote, title, link) and search coverage only."""
     v = _raw_view()
     snap = {"saved_at": v["saved_at"], "articles": v["articles"], "extracted": v["extracted"],
-            "coverage": {c: sorted(ms) for c, ms in sorted(v["coverage"].items())}, "events": v["events"]}
+            "coverage": {c: sorted(ms) for c, ms in sorted(v["coverage"].items())}, "events": events()}
     out = path or SNAPSHOT
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(snap, ensure_ascii=False, indent=0), encoding="utf-8")
@@ -183,6 +185,8 @@ def query(frm: str, to: str, layer: str = "hostile", types: list[str] | None = N
         slot["media"] += e["type"] == "T6"
     return {"layer": layer, "from": frm, "to": to, "months": months, "searched_months": wanted,
             "types": all_types, "countries": countries, "n_events": len(evs),
+            "via": {k: sum(1 for e in evs if e.get("via", "exa-gemini") == k) for k in sorted({e.get("via", "exa-gemini") for e in evs})},
+            "sites": len({e["domain"] for e in evs}),
             "extracted": v["extracted"], "articles": v["articles"], "saved_at": v["saved_at"]}
 
 
