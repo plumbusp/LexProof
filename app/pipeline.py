@@ -1,6 +1,7 @@
 """Request text -> officer view (citations + proof + deadline + draft reply)."""
 import os
 import re
+import threading
 import time
 import traceback
 from concurrent.futures import ThreadPoolExecutor
@@ -92,7 +93,7 @@ def draft_reply(received: date, rows, dls, rtype, name) -> str:
     return "\n\n".join(p)
 
 
-def run(text: str, params: dict, progress=lambda s: None) -> dict:
+def run(text: str, params: dict, progress=lambda step, **kw: None) -> dict:
     t0, warnings = time.time(), []
     try:
         received = date.fromisoformat(params.get("received_date") or "")
@@ -101,7 +102,8 @@ def run(text: str, params: dict, progress=lambda s: None) -> dict:
     if not settings.exa_enabled:
         warnings.append("No Exa key: unknown laws, 404s and implicit claims can't be looked up.")
 
-    progress("Finding legal references" + (" with Gemini" if settings.ai_enabled else " (rules)"))
+    progress("Reading the letter for legal references" + (" with Gemini" if settings.ai_enabled else " (rule-based)"),
+             stage="read")
     refs, asks, extractor = _refs(text, warnings)
 
     rtype = request_type(text)
@@ -110,9 +112,22 @@ def run(text: str, params: dict, progress=lambda s: None) -> dict:
     for r in refs:
         if r["kind"] == "implicit":
             r["hint"] = hint
-    progress(f"Checking {len(refs)} references against legislation.gov.uk and Exa")
+    total, done, lock = len(refs), [0], threading.Lock()
+    progress(f"Found {total} reference{'s' * (total != 1)}. Checking each against the law", stage="official",
+             done=0, total=total)
+
+    def one(ref):
+        say = lambda msg, stage: progress(msg, stage=stage, done=done[0], total=total)
+        res = check(ref, say)
+        with lock:
+            done[0] += 1
+            progress(f"Checked {done[0]} of {total}: {res.get('cited') or ref['quote'][:60]}", done=done[0], total=total)
+        return res
+
     with ThreadPoolExecutor(max_workers=4) as pool:
-        results = list(pool.map(check, refs))
+        results = list(pool.map(one, refs))
+    progress("Comparing claims with the real text and working out the deadline", stage="compare",
+             done=total, total=total)
 
     rows, highlights = [], []
     for i, (ref, res) in enumerate(zip(refs, results), 1):

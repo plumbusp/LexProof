@@ -29,9 +29,9 @@ def _set(job_id, **kw):
 
 
 def _work(job_id, text, params):
-    def progress(step):
+    def progress(step, **kw):
         with _lock:
-            _jobs[job_id]["progress"].append({"step": step, "at": datetime.now(timezone.utc).isoformat()})
+            _jobs[job_id]["progress"].append({"step": step, "at": datetime.now(timezone.utc).isoformat(), **kw})
     out = pipeline.run_safe(text, params, progress)
     if out["ok"]:
         _set(job_id, status="done", result=out["result"])

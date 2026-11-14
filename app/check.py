@@ -65,7 +65,7 @@ def _compare(claim_text: str, proof: dict, out: dict):
     return True, ""
 
 
-def _exa_rule(query: str, ev: list, act_level: bool = True):
+def _exa_rule(query: str, ev: list, act_level: bool = True, say=lambda msg, stage: None):
     """Exa: find a legislation.gov.uk provision, then fetch its real text from the API."""
     try:
         hits = exa_src.search(query, include_domains=["legislation.gov.uk"], num_results=6)
@@ -79,6 +79,8 @@ def _exa_rule(query: str, ev: list, act_level: bool = True):
     parsed = [(h, laws.parse_url(h["url"])) for h in hits]
     for h, p in parsed:  # prefer a specific section we can fetch
         if p and p["pid"]:
+            say(f"Exa found {laws.label_from_url(h['url']) or h['title']}: fetching its real text from legislation.gov.uk",
+                "official")
             r = _fetch(p["type"], p["year"], p["number"], p["kind"], p["pid"])
             if r:
                 ev.append(f"Fetched real text: {r['url']}")
@@ -91,8 +93,9 @@ def _exa_rule(query: str, ev: list, act_level: bool = True):
     return None
 
 
-def check(ref: dict) -> dict:
-    """ref: {quote, kind, act_name, provision, claim}. Returns the row for the officer view."""
+def check(ref: dict, say=lambda msg, stage: None) -> dict:
+    """ref: {quote, kind, act_name, provision, claim}. Returns the row for the officer view.
+    say(msg, stage) reports what is happening for the loading hint; stage is 'official' or 'exa'."""
     ev, out = [], {"status": "NOT_FOUND", "note": "", "proof": None, "diff": None,
                    "cited": laws.cited_label(ref["act_name"], ref["provision"]) if ref["kind"] == "explicit" else ""}
     claim_text = f"{ref['claim']} {ref['quote']}"
@@ -103,6 +106,7 @@ def check(ref: dict) -> dict:
         if law:
             ev.append(f"Dictionary: {ref['act_name'] or ref['quote']} -> {law['type']}/{law['year']}/{law['number']}")
             if prov:
+                say(f"Getting {law['title']} {prov[0]} {prov[1]} from legislation.gov.uk", "official")
                 r = _fetch(law["type"], law["year"], law["number"], *prov)
                 if r:
                     ev.append(f"Fetched {r['url']}")
@@ -112,6 +116,7 @@ def check(ref: dict) -> dict:
                             "evidence": ev}
                 ev.append(f"404: {law['title']} has no {prov[0]} {prov[1]}")
             else:  # Act named without a section: the Act exists
+                say(f"Confirming {law['title']} exists on legislation.gov.uk", "official")
                 ex = legislation.act_exists(law["type"], law["year"], law["number"])
                 if ex["exists"]:
                     return {**out, "status": "MATCH", "note": "The Act exists; no section was cited.",
@@ -121,7 +126,8 @@ def check(ref: dict) -> dict:
             ev.append(f"Dictionary: '{ref['act_name'] or ref['quote']}' unknown")
         # Known Act but missing section: only a specific real section counts as "nearest rule",
         # pointing back at the same Act would tell the officer nothing.
-        found = _exa_rule(f"{ref['act_name']} {ref['provision']}: {ref['claim']}", ev, act_level=not law)
+        say(f"Not found as cited: {out['cited'] or ref['quote']}. Asking Exa for the nearest real rule", "exa")
+        found = _exa_rule(f"{ref['act_name']} {ref['provision']}: {ref['claim']}", ev, act_level=not law, say=say)
         if found:
             p = found["proof"]
             label = f"{p['title']}{' - ' + p['heading'] if p['heading'] else ''}"
@@ -132,7 +138,10 @@ def check(ref: dict) -> dict:
 
     # implicit
     hint = ref.get("hint", "")
-    found = _exa_rule(f"{hint}: {ref['claim'] or ref['quote']}" if hint else (ref["claim"] or ref["quote"]), ev)
+    claim = ref["claim"] or ref["quote"]
+    short = claim[:70] + ("…" if len(claim) > 70 else "")
+    say(f"No law named for “{short}”: using Exa to find which law says this", "exa")
+    found = _exa_rule(f"{hint}: {claim}" if hint else claim, ev, say=say)
     if found:
         ok, note = _compare(claim_text, found["proof"], out)
         if not ok:  # the rule that governs this says something different

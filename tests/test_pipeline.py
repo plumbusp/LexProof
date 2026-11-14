@@ -14,7 +14,7 @@ LETTER = generate.generate("foi", preset="foi-1")["text"]     # FOIA s.1, s.10 (
 PEOPLE_LABELS = re.compile(r"\b(bot|bots|spam|spammer|ai slop|attack|attacker)\b", re.I)
 
 
-def verdict(ref):
+def verdict(ref, say=lambda msg, stage: None):
     """Recorded verdicts keyed on what the letter cites."""
     q = ref["quote"].lower()
     proof = lambda path, heading, text: {"title": "Freedom of Information Act 2000", "heading": heading,  # noqa: E731
@@ -45,7 +45,7 @@ def offline(monkeypatch):
 
 def test_run_end_to_end(offline):
     steps = []
-    res = pipeline.run(LETTER, {"received_date": "2026-11-16"}, steps.append)
+    res = pipeline.run(LETTER, {"received_date": "2026-11-16"}, lambda s, **kw: steps.append(s))
     rows = res["claims"]
     assert [r["status"] for r in rows] == ["MATCH", "MISQUOTED", "NOT_FOUND", "POSSIBLE_RULE", "MATCH"]
     assert res["summary"]["counts"]["MISQUOTED"] == 1 and res["summary"]["total"] == 5
@@ -56,7 +56,7 @@ def test_run_end_to_end(offline):
     assert res["deadline"]["due"] == "2026-12-15"   # 20 working days; St Andrew's Day 30 Nov is skipped
     assert any("No Gemini key" in w for w in res["meta"]["warnings"])
     assert any("No Exa key" in w for w in res["meta"]["warnings"])
-    assert steps and steps[0].startswith("Finding legal references")
+    assert steps and steps[0].startswith("Reading the letter for legal references")
 
 
 def test_draft_reply_corrects_the_letter_without_labelling_anyone(offline):
@@ -93,7 +93,7 @@ def test_request_type_and_requester():
 
 def test_run_safe_turns_a_crash_into_an_error(monkeypatch):
     monkeypatch.setattr(pipeline, "run", lambda *a: 1 / 0)
-    out = pipeline.run_safe("text", {}, lambda s: None)
+    out = pipeline.run_safe("text", {}, lambda s, **kw: None)
     assert out["ok"] is False and out["error"].startswith("ZeroDivisionError")
 
 

@@ -32,7 +32,7 @@
     const text = $("#input").value.trim();
     if (text.length < 20) return progress("Paste a request first.", true);
     $("#btn-run").disabled = true;
-    progress("Starting…");
+    loading([]);
     try {
       const { job_id } = await api("/api/analyze", { method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text, params: { received_date: $("#received").value } }) });
@@ -41,11 +41,37 @@
         const j = await api(`/api/jobs/${job_id}`);
         if (j.status === "done") { $("#progress").hidden = true; render(j.result); break; }
         if (j.status === "error") { progress(j.error, true); break; }
-        progress((j.progress.at(-1) || {}).step || "Working…");
+        loading(j.progress || []);
         await new Promise((r) => setTimeout(r, 900));
       }
     } catch (e) { progress(e.message, true); }
     $("#btn-run").disabled = false;
+  }
+  // Loading hint: which stage of the check is running and what it is doing right now.
+  const STAGES = [
+    { key: "read", title: "Reading the letter", sub: "Finding every law it cites or implies" },
+    { key: "official", title: "Official database", sub: "Fetching the real text from legislation.gov.uk" },
+    { key: "exa", title: "Exa search", sub: "Tracing ambiguous or unnamed law references" },
+    { key: "compare", title: "Comparing", sub: "Claims vs. the real text, plus the deadline" },
+  ];
+  function loading(steps) {
+    const seen = new Set(steps.map((s) => s.stage).filter(Boolean));
+    const final = seen.has("compare"), checking = seen.has("official") && !final;
+    const state = (k) => {
+      if (k === "read") return seen.has("official") || final ? "done" : "active";
+      if (k === "official") return final ? "done" : checking ? "active" : "pending";
+      if (k === "exa") return final ? (seen.has("exa") ? "done" : "skipped") : seen.has("exa") ? "active" : "pending";
+      return final ? "active" : "pending";
+    };
+    const icon = { done: "check_circle", pending: "radio_button_unchecked", skipped: "remove" };
+    const last = steps.at(-1) || {}, counted = [...steps].reverse().find((s) => s.total);
+    const count = checking && counted ? `<span class="load-count">${counted.done} / ${counted.total} checked</span>` : "";
+    const el = $("#progress"); el.hidden = false;
+    el.innerHTML = `<ol class="load-steps">${STAGES.map((s) => { const st = state(s.key); return `<li class="ls-${st}">
+        ${st === "active" ? `<span class="spin"></span>` : `<span class="icon">${icon[st]}</span>`}
+        <div><div class="ls-title">${esc(s.title)}</div><div class="ls-sub">${esc(st === "skipped" ? "Not needed: every law was named" : s.sub)}</div></div>
+      </li>`; }).join("")}</ol>
+      <div class="load-now" aria-live="polite"><span>${esc(last.step || "Starting…")}</span>${count}</div>`;
   }
   function progress(msg, err) { const el = $("#progress"); el.hidden = false; el.innerHTML = err ? `<span class="err">${esc(msg)}</span>` : esc(msg); }
 
