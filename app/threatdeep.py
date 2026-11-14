@@ -23,6 +23,7 @@ scope and the evidence level (plan rule 2).
   python -m app.threatdeep --dry-run                                      prints the calls, spends nothing
 """
 import argparse
+import hashlib
 import json
 import threading
 import time
@@ -300,9 +301,39 @@ def _res(r) -> dict:
             "highlights": list(getattr(r, "highlights", None) or [])}
 
 
+RAW_DIR = tm.OUT_DIR / "exa_raw"
+
+
+def _plain(o):
+    """SDK response objects -> plain JSON (dataclasses / pydantic / objects with __dict__)."""
+    if isinstance(o, (str, int, float, bool)) or o is None:
+        return o
+    if isinstance(o, dict):
+        return {k: _plain(v) for k, v in o.items()}
+    if isinstance(o, (list, tuple)):
+        return [_plain(v) for v in o]
+    if hasattr(o, "model_dump"):
+        return _plain(o.model_dump())
+    if hasattr(o, "__dict__"):
+        return {k: _plain(v) for k, v in vars(o).items() if not k.startswith("_")}
+    return str(o)
+
+
+def save_raw(kind: str, rid: str, req: dict, resp) -> None:
+    """Keeps Exa's full answer (every result, the structured output and its grounding) on disk."""
+    d = RAW_DIR / kind
+    d.mkdir(parents=True, exist_ok=True)
+    name = hashlib.sha1(rid.encode()).hexdigest()[:16] + ".json"
+    (d / name).write_text(json.dumps({"id": rid, "request": {"query": req.get("query"), **req.get("kwargs", {})},
+                                      "response": _plain(resp),
+                                      "fetched_at": datetime.now(timezone.utc).isoformat(timespec="seconds")},
+                                     ensure_ascii=False, indent=1, default=str), encoding="utf-8")
+
+
 def run_search(client, req: dict) -> tuple[int, float, int]:
     """One deep (or deep-lite) search -> verified events stored. Returns (events kept, cost, events Exa proposed)."""
     resp = client.search(req["query"], **req["kwargs"], timeout=120)
+    save_raw("search", req["id"], req, resp)
     results = [_res(r) for r in resp.results]
     raw, conf = parse_output(getattr(resp, "output", None))
     arts, verified = verify_events(client, raw, conf, results, req["country"], req["group"], req["via"])

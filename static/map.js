@@ -18,16 +18,29 @@
   ];
   const SHAPES = "https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-50m.json";
   const W = 800, H = 760, NS = "http://www.w3.org/2000/svg";
-  const TYPE_NAMES = { T3: "T3 · complaints and requests", T5: "T5 · threat and hoax emails", T6: "T6 · media targets", AI: "AI complaints" };
-  const LEVELS = {
-    hostile: [
-      "Nothing found in this window. This is not proof of safety.",
-      "Level 1 · forecast, or weak or aggregator-only source",
-      "Level 2 · an official says it is coordinated or warns of it, no attribution",
-      "Level 3 · reported incident, attribution suspected but not confirmed",
-      "Level 4 · official or researchers, named state, two or more source sites",
-    ],
-  };
+  const TYPE_NAMES = { T3: "T3 · Mass complaints", T5: "T5 · Threat emails", T6: "T6 · Media targets", AI: "AI complaints" };
+
+  // Evidence tiers. The level is set by rules in code (app/threatmap.py), never by AI.
+  // Each tier has a fixed name, a one-line meaning, and at most 4 labels drawn from one small vocabulary.
+  const VOICE = { official: "Official source", researchers: "Researchers", expert: "One expert", nobody: "Nobody calls it hostile" };
+  const BLAME = { named: "State named", suspected: "Actor suspected", none: "Nobody blamed" };
+  const KIND = { incident: "Incident", warning: "Warning", forecast: "Forecast" };
+  const TIERS = [
+    { name: "Not called hostile", why: "Reported, but nobody says it is hostile.",
+      labels: (e) => [VOICE.nobody, KIND[e.kind]] },
+    { name: "Weak signal", why: "One expert, a forecast, or an unverified source.",
+      labels: (e) => [VOICE[e.voice], BLAME[e.attribution], e.kind === "forecast" ? KIND.forecast : null, e.weak_source ? "Unverified source" : null] },
+    { name: "Official warning", why: "An official calls it coordinated. Nobody is blamed.",
+      labels: (e) => [VOICE.official, KIND[e.kind], BLAME[e.attribution]] },
+    { name: "Suspected attack", why: "It happened, and a hostile actor is suspected. Not confirmed.",
+      labels: (e) => [KIND.incident, BLAME.suspected, VOICE[e.voice]] },
+    { name: "Confirmed campaign", why: "Officials or researchers name a state, and 2+ outlets report it.",
+      labels: (e) => [VOICE[e.voice], BLAME.named, "2+ outlets"] },
+  ];
+  const AI_TIER = { name: "AI complaint surge", why: "Real people using AI to complain. Never counted as hostile.",
+    labels: (e) => ["Not hostile", e.ai_use === "yes" ? "AI use reported" : "AI use unclear"] };
+  const tierOf = (e) => (e.layer === "precursor" ? AI_TIER : TIERS[e.level] || TIERS[0]);
+  const COUNTRY_NONE = "No hostile signal found. Not proof of safety.";
   const $ = (s) => document.querySelector(s);
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const monthName = (m) => new Date(m + "-01T00:00:00").toLocaleDateString("en-GB", { month: "short", year: "numeric" });
@@ -36,6 +49,7 @@
   let boot = "idle";                       // idle | loading | ready
   let layer = "hostile", frm = null, to = null, types = null; // types: null = all, [] = none
   let data = null, selected = null, seq = 0, showAll = false, centroids = {};
+  let firstLoad = true;
   const original = new Set(); // ids of events whose quote is shown in its original language
   const langName = (c) => { try { return new Intl.DisplayNames(["en"], { type: "language" }).of(c); } catch { return c; } };
 
@@ -74,6 +88,12 @@
       if (!r.ok) throw new Error(r.status === 404 ? "No saved map data found." : `Server said ${r.status}.`);
       const d = await r.json();
       if (mine !== seq) return; // a newer request is already on its way
+      if (firstLoad && d.months.length > 3) {   // open on the last 3 months: the fully enriched window
+        firstLoad = false;
+        frm = d.months[d.months.length - 3]; to = d.months[d.months.length - 1];
+        return load();
+      }
+      firstLoad = false;
       data = d; frm = d.from; to = d.to;
       render();
     } catch (e) {
@@ -126,8 +146,8 @@
   // ---------- render from data
   function countryText(name, c) {
     if (!c.searched) return "not searched in this window";
-    if (layer === "precursor") return c.level ? `AI complaint surge reported by ${["", "1 source site", "2 source sites", "3-4 source sites", "5+ source sites"][c.level]}` : "nothing found in this window";
-    return LEVELS.hostile[c.level].replace(/^Nothing found/, "nothing found").replace(/^Level/, "level");
+    if (layer === "precursor") return c.level ? `AI complaint surge reported by ${["", "1 news site", "2 news sites", "3-4 news sites", "5+ news sites"][c.level]}` : "Nothing found in this window.";
+    return c.level ? `Level ${c.level} · ${TIERS[c.level].name}. ${TIERS[c.level].why}` : COUNTRY_NONE;
   }
 
   function render() {
@@ -151,7 +171,8 @@
     }
     const behind = data.extracted < data.articles ? ` Reading articles: ${data.extracted} of ${data.articles} done, so this is incomplete.` : "";
     $("#map-status").textContent = `${data.n_events} event${data.n_events === 1 ? "" : "s"} · ${monthName(data.from)} to ${monthName(data.to)} · ${data.searched_months.length} month${data.searched_months.length === 1 ? "" : "s"} searched.` + behind;
-    $("#map-foot").textContent = `Saved data, fetched up to ${data.saved_at ? dayName(data.saved_at) : "an unknown date"}. Reported or warned, not proven attack. Levels are set by rules, not by AI.`;
+    $("#map-foot").textContent = `Saved news, fetched up to ${data.saved_at ? dayName(data.saved_at) : "an unknown date"}. Reported or warned, not proven attack. Levels are set by rules, not by AI.`;
+    renderTiers();
     renderSide();
   }
 
@@ -180,9 +201,10 @@
   function renderLegend() {
     const p = layer === "precursor" ? "p" : "l";
     const labels = layer === "precursor"
-      ? ["0 · nothing found", "1 source site", "2", "3-4", "5+"]
-      : ["0 · nothing found, not safe", "1", "2", "3", "4 · strongest evidence"];
-    $("#legend").innerHTML = labels.map((t, i) => `<span class="legend-item"><span class="sw ${i === 0 ? "sw-hatch" : p + i}"></span>${esc(t)}</span>`).join("")
+      ? ["Nothing found", "1 news site", "2", "3-4", "5+"]
+      : ["No hostile signal", ...TIERS.slice(1).map((t, i) => `${i + 1} · ${t.name}`)];
+    const tips = layer === "precursor" ? [] : [COUNTRY_NONE, ...TIERS.slice(1).map((t) => t.why)];
+    $("#legend").innerHTML = labels.map((t, i) => `<span class="legend-item"${tips[i] ? ` title="${esc(tips[i])}"` : ""}><span class="sw ${i === 0 ? "sw-hatch" : p + i}"></span>${esc(t)}</span>`).join("")
       + `<span class="legend-item"><span class="sw sw-ns"></span>not searched</span>`
       + `<span class="legend-item"><span class="sw-dot">n</span>events</span>`
       + (layer === "hostile" ? `<span class="legend-item"><span class="sw-dia"></span>media target (T6), no level</span>` : "");
@@ -191,16 +213,17 @@
   // ---------- side panel
   function select(name) { selected = name; showAll = false; render(); }
 
+  // Card: date + tier + type / headline / 2-3 line summary / tier labels (max 4) / quote / source.
   function eventCard(e) {
-    const attr = { none: "no attribution", suspected: "suspected, not confirmed", named: "named" }[e.attribution];
-    const voice = { nobody: "nobody calls it hostile", expert: "an expert says so", researchers: "researchers say so", official: "an official says so" }[e.voice];
-    const tags = layer === "hostile"
-      ? `<span class="tag">${esc(voice)}</span><span class="tag">${esc(attr)}</span>${e.kind !== "incident" ? `<span class="tag">${esc(e.kind)}</span>` : ""}`
-      : `<span class="tag">${e.ai_use === "yes" ? "AI use mentioned" : "AI use unclear"}</span>`;
+    const tier = tierOf(e);
+    const labels = [...new Set(tier.labels(e).filter(Boolean))].slice(0, 4);
+    const tierChip = e.layer === "precursor" ? tier.name : e.type === "T6" ? "Media target · no level" : `Level ${e.level} · ${tier.name}`;
+    const headline = e.headline || e.title_en || e.title || e.target || "Untitled report";
     return `<article class="ev">
-      <div class="ev-top"><span class="ev-date">${esc(dayName(e.date_start))}</span><span class="tag type">${esc(e.type)}</span>${layer === "hostile" && e.type !== "T6" ? `<span class="tag lvl">L${e.level}</span>` : ""}${e.weak_source ? `<span class="tag warn">unverified source</span>` : ""}</div>
-      <div class="ev-target">${esc(e.target || "Target not stated")}${e.volume ? ` · <span class="mono">${esc(e.volume)}</span>` : ""}</div>
-      <div class="ev-tags">${tags}</div>
+      <div class="ev-top"><span class="ev-date">${esc(dayName(e.date_start))}</span><span class="tag lvl" title="${esc(tier.why)}">${esc(tierChip)}</span><span class="tag type">${esc(TYPE_NAMES[e.type] || e.type)}</span></div>
+      <h3 class="ev-head"${e.headline ? ` title="Headline written by AI from the article"` : ""}>${esc(headline)}</h3>
+      ${e.summary ? `<p class="ev-sum">${esc(e.summary)} <span class="fine">Summary by Exa</span></p>` : ""}
+      <div class="ev-tags">${labels.map((l) => `<span class="tag">${esc(l)}</span>`).join("")}</div>
       ${quoteBlock(e)}
       ${/^https?:\/\//i.test(e.url) ? `<a class="ev-src" href="${esc(e.url)}" target="_blank" rel="noopener noreferrer">${esc(e.domain)}<span class="icon">open_in_new</span></a>` : `<span class="ev-src">${esc(e.domain)}</span>`}
     </article>`;
@@ -213,6 +236,14 @@
     return `<blockquote${orig ? ` lang="${esc(e.lang || "")}"` : ""}>“${esc(orig ? e.quote : e.quote_en)}”</blockquote>
       <div class="ev-tr fine">${orig ? `Original, ${esc(lang)}` : `Translated from ${esc(lang)} by ${e.tr_by === "claude" ? "Claude" : "Gemini"}`}
         <button type="button" class="linkish" data-orig="${esc(e.id)}" aria-pressed="${orig}">${orig ? "Show English" : "Show original"}</button></div>`;
+  }
+
+  function renderTiers() {
+    const box = $("#map-tiers");
+    if (!box) return;
+    const rows = layer === "precursor" ? [AI_TIER] : TIERS.map((t, i) => ({ ...t, n: i }));
+    box.innerHTML = `<h3>What the levels mean</h3><dl>${rows.map((t) =>
+      `<div><dt>${t.n != null ? `${t.n} · ` : ""}${esc(t.name)}</dt><dd>${esc(t.why)}</dd></div>`).join("")}</dl>`;
   }
 
   function renderSide() {

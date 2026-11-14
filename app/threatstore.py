@@ -18,7 +18,7 @@ from functools import lru_cache
 from pathlib import Path
 
 from . import threatmap as tm
-from . import threattranslate
+from . import threatenrich, threattranslate
 
 EXTRACTIONS = tm.OUT_DIR / "extractions.jsonl"
 SNAPSHOT = Path(__file__).resolve().parent.parent / "mapdata" / "snapshot.json"
@@ -139,7 +139,7 @@ def _view() -> dict:
 
 def events() -> list[dict]:
     """English translations (display only) are attached here; the original quote stays the proof."""
-    return [threattranslate.attach(dict(e)) for e in _view()["events"]]
+    return [threatenrich.attach(threattranslate.attach(dict(e))) for e in _view()["events"]]
 
 
 def months_available() -> list[str]:

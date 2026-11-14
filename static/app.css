@@ -371,6 +371,14 @@ body[data-view="home"] .topbar { background: color-mix(in srgb, var(--panel) 70%
 .ev-target { font-size: 13px; font-weight: 500; }
 .ev-tags { display: flex; flex-wrap: wrap; gap: 4px; }
 .tag { padding: 1px 6px; font-size: 10px; color: var(--muted); border: 1px solid var(--border-strong); background: var(--subtle); }
+.ev-head { margin: 6px 0 0; font: 600 15px/1.35 var(--sans); color: var(--text); }
+.ev-sum { margin: 4px 0 0; font-size: 13px; line-height: 1.5; color: var(--text-2); }
+.ev-sum .fine { white-space: nowrap; }
+.map-tiers { padding: 16px 20px; }
+.map-tiers h3 { margin: 0 0 10px; font-size: 13px; font-weight: 600; }
+.map-tiers dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px 20px; margin: 0; }
+.map-tiers dt { font-size: 12px; font-weight: 600; color: var(--text); }
+.map-tiers dd { margin: 2px 0 0; font-size: 12px; line-height: 1.4; color: var(--muted); }
 .ev-tr { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin-top: -4px; }
 .linkish { padding: 0; border: 0; background: none; font: inherit; color: var(--text); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
 .tag.type, .tag.lvl { font-family: var(--mono); font-weight: 600; color: var(--text); }
