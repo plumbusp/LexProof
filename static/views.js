@@ -11,6 +11,7 @@
   }
 
   function show(view) {
+    document.body.dataset.view = view;
     document.querySelectorAll("[data-view-section]").forEach((el) => { el.hidden = el.dataset.viewSection !== view; });
     document.querySelectorAll("[data-only]").forEach((el) => { el.hidden = el.dataset.only !== view; });
     document.querySelectorAll(".tab").forEach((el) => {

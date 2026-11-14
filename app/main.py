@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 from . import cache, pipeline, threatstore
 from .config import ROOT, settings
 
-app = FastAPI(title="Complaint citation checker", version="0.2")
+app = FastAPI(title="LexProof", version="0.2")
 _jobs: dict[str, dict] = {}
 _lock = threading.Lock()
 MAX_CHARS = 60000

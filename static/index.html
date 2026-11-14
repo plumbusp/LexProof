@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Citation Checker</title>
+<title>LexProof</title>
 <script>try{document.documentElement.dataset.theme=localStorage.getItem("theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")}catch(e){document.documentElement.dataset.theme="light"}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,7 +14,7 @@
 <body>
 <header class="topbar">
   <div class="brand">
-    <span class="brand-name">Citation Checker</span><span class="slash">/</span><span class="org" id="org"></span>
+    <a class="brand-name" href="#home">LexProof</a><span class="slash">/</span><span class="org" id="org"></span>
   </div>
   <nav class="tabs" aria-label="Views">
     <a class="tab" href="#home" data-view="home">Home</a>
@@ -31,26 +31,79 @@
   </div>
 </header>
 
-<!-- Home -->
+<!-- Home: a scroll story. Europe lights up as you read; the LexProof wordmark flies into the top bar. -->
 <main class="view home" id="view-home" data-view-section="home" hidden>
-  <div class="home-inner">
-    <p class="eyebrow">For UK public bodies</p>
-    <h1>Every law a letter cites, checked against the official text.</h1>
-    <p class="lede">Requests and complaints to public institutions often quote the law, sometimes correctly, sometimes not, and more and more often in large AI-written waves.
-      We find each legal reference, check it against legislation.gov.uk, and show where in Europe institutions report being flooded with mass submissions.</p>
+  <div class="home-bg" aria-hidden="true">
+    <div class="bg-set bg-light"><div class="bg-img start"></div><div class="bg-img lit"></div><div class="bg-glow"></div><div class="bg-scrim"></div></div>
+    <div class="bg-set bg-dark"><div class="bg-img start"></div><div class="bg-img lit"></div><div class="bg-glow"></div><div class="bg-scrim"></div></div>
+  </div>
+  <div class="hero-logo" id="hero-logo" aria-hidden="true">LexProof</div>
 
-    <div class="home-links">
-      <a class="home-link" href="#panel">
-        <span class="home-link-title">Complaint Reviewer Panel <span class="icon">arrow_forward</span></span>
-        <span class="home-link-text">Paste a request. See each citation checked against the real text, the reply deadline and a draft reply.</span>
-      </a>
-      <a class="home-link" href="#map">
-        <span class="home-link-title">Regional Abuse Map <span class="icon">arrow_forward</span></span>
-        <span class="home-link-text">Where across Europe public institutions report mass submissions. Every dot links to a source and a quote.</span>
-      </a>
+  <section class="hero">
+    <h1 class="sr-only">LexProof</h1>
+    <div class="hero-slot" id="hero-slot"></div>
+    <div class="hero-text">
+      <p class="hero-tag">Shining a light on every law a letter cites.</p>
+      <p class="eyebrow">Demo for UK public bodies</p>
     </div>
+    <button class="hero-cue" id="hero-cue" type="button">
+      <span>See how we check</span><span class="icon">south</span>
+    </button>
+  </section>
 
-    <p class="fine home-foot">The officer decides. Nothing is sent from here.</p>
+  <div class="home-col">
+    <section class="home-step" id="home-problem">
+      <p class="eyebrow reveal">The problem</p>
+      <h2 class="reveal" style="--i:1">Letters quote the law. More and more get it wrong.</h2>
+      <p class="lede reveal" style="--i:2">Complaints to public bodies now arrive in AI-written waves. They cite sections that are misnumbered,
+        misquoted or invented, and every one costs an officer time to check by hand.</p>
+    </section>
+
+    <section class="home-step">
+      <p class="eyebrow reveal">What LexProof does</p>
+      <h2 class="reveal" style="--i:1">Every law a letter cites, checked against the official text.</h2>
+      <div class="home-flow reveal" style="--i:2" aria-label="How it works">
+        <span class="flow-step">Letter</span>
+        <span class="icon flow-arrow">arrow_forward</span>
+        <span class="flow-step">Laws it cites</span>
+        <span class="icon flow-arrow">arrow_forward</span>
+        <span class="flow-results">
+          <span class="badge st-MATCH">Correct</span>
+          <span class="badge st-MISQUOTED">Misquoted</span>
+          <span class="badge st-NOT_FOUND">Doesn't exist</span>
+        </span>
+      </div>
+      <p class="lede reveal" style="--i:3">We find each reference, fetch the real text from legislation.gov.uk and compare them word for word.
+        No fetched proof, no verdict.</p>
+    </section>
+
+    <section class="home-step">
+      <p class="eyebrow reveal">Two tools</p>
+      <h2 class="reveal" style="--i:1">Check one letter. See the whole wave.</h2>
+      <div class="home-links reveal" style="--i:2">
+        <a class="home-link" href="#panel">
+          <span class="home-link-kicker">Review a complaint</span>
+          <span class="home-link-title">Complaint Reviewer Panel <span class="icon">arrow_forward</span></span>
+          <span class="home-link-text">Paste it in. Get every citation checked, the reply deadline and a draft reply.</span>
+        </a>
+        <a class="home-link" href="#map">
+          <span class="home-link-kicker">Spot bulk campaigns</span>
+          <span class="home-link-title">Regional Abuse Map <span class="icon">arrow_forward</span></span>
+          <span class="home-link-text">See where in Europe institutions report being flooded with mass submissions, each with its source.</span>
+        </a>
+      </div>
+    </section>
+
+    <section class="home-step home-end">
+      <p class="eyebrow reveal">Lights on</p>
+      <h2 class="reveal" style="--i:1">Proof, not guesses.</h2>
+      <div class="powered reveal" style="--i:2">
+        <img src="/static/img/exa.png" alt="" width="32" height="32">
+        <p><strong>Powered by Exa.</strong> Exa finds and reads the laws, regulator pages and news reports behind every check and every dot on the map.</p>
+      </div>
+      <a class="btn primary home-cta reveal" style="--i:3" href="#panel">Check a letter<span class="icon">arrow_forward</span></a>
+      <p class="fine home-foot reveal" style="--i:4">The officer decides. Nothing is sent from here.</p>
+    </section>
   </div>
 </main>
 
@@ -137,5 +190,6 @@
 <script src="/static/app.js"></script>
 <script src="/static/map.js"></script>
 <script src="/static/views.js"></script>
+<script src="/static/home.js"></script>
 </body>
 </html>

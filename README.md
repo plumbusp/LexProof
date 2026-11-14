@@ -1,4 +1,4 @@
-# Request Law Checker (UK)
+# LexProof (UK)
 
 Paste a request or complaint sent to a UK public body. Every legal reference is checked against
 legislation.gov.uk, and the officer gets: each citation + real text as proof + reply deadline + a draft reply.
