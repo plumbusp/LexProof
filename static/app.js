@@ -1,13 +1,15 @@
-// Thin renderer: statuses, columns and parameters come from /api/schema and the result.
+// Officer view. Renders the backend result; statuses/labels come from the API.
 (() => {
   const $ = (s) => document.querySelector(s);
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-  let schema = null, result = null, filter = null;
+  const store = { get: (k) => { try { return localStorage.getItem(k); } catch (_) { return null; } },
+                  set: (k, v) => { try { localStorage.setItem(k, v); } catch (_) {} } };
+  let schema = null, result = null, openId = null;
 
-  const statusOf = (code) => schema.statuses.find((s) => s.code === code) || { label: code, severity: "muted" };
-  const badge = (code) => { const s = statusOf(code); return `<span class="badge sev-${s.severity}" title="${esc(s.rule || "")}">${esc(s.label)}</span>`; };
-  const link = (url, label) => url ? `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(label || url)}</a>` : esc(label || "");
-  const srcLabel = (p) => p ? `${p.title || ""}${p.heading ? " - " + p.heading : ""}` : "";
+  const label = (code) => (schema.statuses.find((s) => s.code === code) || { label: code }).label.toUpperCase();
+  const rule = (code) => (schema.statuses.find((s) => s.code === code) || {}).rule || "";
+  const badge = (code) => `<span class="badge st-${code}" title="${esc(rule(code))}">${esc(label(code))}</span>`;
+  const fmtDate = (iso) => new Date(iso + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" }).replace(",", "");
 
   async function api(path, opts) {
     const r = await fetch(path, opts);
@@ -15,121 +17,171 @@
     return r.json();
   }
 
-  function renderParams() {
-    const today = new Date().toISOString().slice(0, 10);
-    $("#params").innerHTML = schema.parameters.map((p) =>
-      `<label>${esc(p.label)}<input type="${p.type}" name="${p.key}" value="${esc(p.default === "today" ? today : p.default || "")}"></label>`).join("");
-    $("#legend").innerHTML = schema.statuses.map((s) => `<span class="sev-${s.severity}" title="${esc(s.rule)}">${esc(s.label)}</span>`).join("");
-    $("#engines").textContent = `Gemini ${schema.capabilities.ai ? "on" : "off (rules fallback)"} · Exa ${schema.capabilities.exa ? "on" : "off"}`;
+  // ---------- theme + panel
+  function setTheme(t) { document.documentElement.dataset.theme = t; $("#theme-icon").textContent = t === "dark" ? "light_mode" : "dark_mode"; store.set("theme", t); }
+  function setPanel(open) {
+    $("#workspace").classList.toggle("panel-closed", !open);
+    $("#btn-panel").setAttribute("aria-pressed", String(open));
+    $("#btn-panel .icon").textContent = open ? "right_panel_close" : "right_panel_open";
+    store.set("panel", open ? "open" : "closed");
   }
-  const readParams = () => Object.fromEntries(schema.parameters.map((p) => [p.key, $(`#params [name="${p.key}"]`).value]));
+  const panelOpen = () => !$("#workspace").classList.contains("panel-closed");
 
+  // ---------- run
   async function run() {
     const text = $("#input").value.trim();
-    if (text.length < 20) return showMsg("Paste a request first.");
+    if (text.length < 20) return progress("Paste a request first.", true);
     $("#btn-run").disabled = true;
-    showProgress([{ step: "Starting…" }]);
+    progress("Starting…");
     try {
-      const { job_id } = await api("/api/analyze", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text, params: readParams() }) });
-      history.replaceState(null, "", `?job=${job_id}`);
-      await poll(job_id);
-    } catch (e) { showMsg(e.message); }
+      const { job_id } = await api("/api/analyze", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, params: { received_date: $("#received").value } }) });
+      history.replaceState(null, "", `?job=${job_id}${location.hash}`);
+      for (;;) {
+        const j = await api(`/api/jobs/${job_id}`);
+        if (j.status === "done") { $("#progress").hidden = true; render(j.result); break; }
+        if (j.status === "error") { progress(j.error, true); break; }
+        progress((j.progress.at(-1) || {}).step || "Working…");
+        await new Promise((r) => setTimeout(r, 900));
+      }
+    } catch (e) { progress(e.message, true); }
     $("#btn-run").disabled = false;
   }
-  async function poll(id) {
-    for (;;) {
-      const j = await api(`/api/jobs/${id}`);
-      showProgress(j.progress);
-      if (j.status === "done") { $("#progress").hidden = true; return render(j.result); }
-      if (j.status === "error") return showMsg(j.error);
-      await new Promise((r) => setTimeout(r, 1000));
-    }
-  }
-  function showProgress(steps) { const el = $("#progress"); el.hidden = false; el.innerHTML = `<ol>${steps.map((s) => `<li>${esc(s.step)}</li>`).join("")}</ol>`; }
-  function showMsg(msg) { const el = $("#progress"); el.hidden = false; el.innerHTML = `<span class="ev-bad">${esc(msg)}</span>`; }
+  function progress(msg, err) { const el = $("#progress"); el.hidden = false; el.innerHTML = err ? `<span class="err">${esc(msg)}</span>` : esc(msg); }
 
+  // ---------- render
   function render(res) {
-    result = res; schema = res.view || schema; filter = null;
-    $("#preview").hidden = false; $("#grid-wrap").hidden = false;
-    $("#headline").textContent = res.summary.headline;
-    $("#tags").innerHTML = res.tags.map((t) => `<span class="chip sev-${t.severity}" data-tag="${t.code}" title="${esc(t.reason)}">${esc(t.label)} · ${t.claim_ids.length}</span>`).join("");
-    $("#deadlines").innerHTML = `<div class="card-title">Reply deadline</div><ul>` + res.deadlines.map((d) =>
-      `<li><b>${esc(d.due)}</b> - ${esc(d.label)}<br><span class="qsrc">${link(d.url, d.basis)}</span></li>`).join("") + "</ul>";
-    $("#reply").innerHTML = `<div class="card-title">Draft reply <button class="link" id="copy-reply">copy</button></div><textarea id="reply-text" class="reply">${esc(res.draft_reply)}</textarea>`;
-    $("#copy-reply").onclick = () => navigator.clipboard.writeText($("#reply-text").value);
-    $("#warnings").innerHTML = (res.meta.warnings || []).map((w) => `<div>⚠ ${esc(w)}</div>`).join("") + `<div class="muted">References found by ${esc(res.meta.extractor)} · ${res.meta.seconds}s</div>`;
-    renderDoc(); renderGrid();
-    $("#detail").innerHTML = `<div class="card-title">Details</div><p class="muted">Click a highlighted passage or a table row.</p>`;
-    $("#input").hidden = true; $("#docview").hidden = false; $("#btn-edit").hidden = false;
+    result = res; schema = res.view || schema; openId = null;
+    renderKpis(); renderLetter(); renderAsks(); renderCites(); renderDraft();
+    $("#input-wrap").hidden = true; $("#letter").hidden = false; $("#btn-edit").hidden = false;
+    const name = res.request.requester;
+    $("#request-sub").innerHTML = `${name ? `from <b>${esc(name)}</b>, ` : ""}received <span class="mono">${esc(fmtDate(res.params.received_date))}</span>`;
+    const w = res.meta.warnings || [];
+    $("#warn").hidden = !w.length; $("#warn").textContent = w.join(" · ");
   }
 
-  function renderDoc() {
+  function renderKpis() {
+    const d = result.deadline, s = result.summary, rt = result.request.type;
+    const left = d.working_days_left;
+    const leftTxt = left >= 0 ? `${left} working day${left === 1 ? "" : "s"} left` : `overdue by ${-left} working days`;
+    const basis = rt === "SAR" ? "One month from receipt – UK GDPR Art 12A" : "20 working days from receipt – FOIA s.10(1)";
+    $("#kpis").hidden = false;
+    $("#kpis").innerHTML = `
+      <div class="card kpi"><span class="kpi-label">Reply deadline</span><div class="kpi-value small">${esc(fmtDate(d.due))} – ${esc(leftTxt)}</div><span class="kpi-sub">${esc(basis)}</span></div>
+      <div class="card kpi"><span class="kpi-label">Request type</span><div class="kpi-value word">${esc(rt)}</div><span class="kpi-sub">${esc(result.request.requester ? "From " + result.request.requester : "Requester not named")}</span></div>
+      <div class="card kpi"><span class="kpi-label">Citations</span><div class="kpi-value">${s.total}</div><span class="kpi-sub sans">Legal references found</span></div>
+      <div class="card kpi"><span class="kpi-label">Checked against official text</span><div class="kpi-value">${s.verified} of ${s.total}</div><span class="kpi-sub sans">Verified accurately</span></div>`;
+  }
+
+  function renderLetter() {
     const text = result.document.text;
     const hs = [...result.highlights].sort((a, b) => a.start - b.start);
     const nOf = Object.fromEntries(result.claims.map((c) => [c.id, c.n]));
     let html = "", pos = 0;
     for (const h of hs) {
-      if (h.start < pos) continue; // skip overlaps
+      if (h.start < pos) continue;
       html += esc(text.slice(pos, h.start));
-      html += `<span class="claim cit sev-${h.severity}" data-claim="${h.claim_id}">${esc(text.slice(h.start, h.end))}</span><span class="badge-n">${nOf[h.claim_id]}</span>`;
+      html += `<span class="hl st-${h.status}" data-claim="${h.claim_id}">${esc(text.slice(h.start, h.end))}</span><span class="num st-${h.status}" data-claim="${h.claim_id}">${nOf[h.claim_id]}</span>`;
       pos = h.end;
     }
-    $("#docview").innerHTML = html + esc(text.slice(pos));
+    $("#letter").innerHTML = html + esc(text.slice(pos));
   }
 
-  function cell(c, key) {
-    switch (key) {
-      case "status": return badge(c.status);
-      case "kind": return `<span class="muted">${esc(c.kind)}</span>`;
-      case "quote": return `${esc(c.quote)}${c.claim && c.claim !== c.quote ? `<div class="qsrc">${esc(c.claim)}</div>` : ""}`;
-      case "proof": return c.proof ? `${c.proof.quote ? `“${esc(c.proof.quote)}”` : ""}<div class="qsrc">${link(c.proof.url, srcLabel(c.proof))}</div>` : `<span class="muted">-</span>`;
-      default: return esc(c[key]);
-    }
-  }
-  function renderGrid() {
-    const cols = schema.grid_columns;
-    $("#grid").innerHTML = `<thead><tr>${cols.map((c) => `<th>${esc(c.label)}</th>`).join("")}</tr></thead><tbody>` +
-      result.claims.map((c) => `<tr data-claim="${c.id}">${cols.map((col) => `<td>${cell(c, col.key)}</td>`).join("")}</tr>`).join("") + "</tbody>";
-    applyFilter();
-  }
-  function applyFilter() {
-    const ids = filter ? new Set(result.tags.find((t) => t.code === filter)?.claim_ids || []) : null;
-    document.querySelectorAll("#grid tbody tr").forEach((tr) => tr.classList.toggle("hidden", !!ids && !ids.has(tr.dataset.claim)));
-    document.querySelectorAll("#tags .chip").forEach((ch) => ch.classList.toggle("active", ch.dataset.tag === filter));
-    $("#clear-filter").hidden = !filter;
+  function renderAsks() {
+    const asks = result.request.asks || [];
+    $("#asks").hidden = !asks.length;
+    $("#asks").innerHTML = `<h2>What is being asked</h2><ul>${asks.map((a) => `<li>${esc(a)}</li>`).join("")}</ul>`;
   }
 
-  function select(id) {
-    document.querySelectorAll("[data-claim]").forEach((el) => el.classList.toggle("selected", el.dataset.claim === id));
-    const c = result.claims.find((x) => x.id === id);
-    if (!c) return;
-    const p = c.proof;
-    $("#detail").innerHTML = `
-      <div class="card-title">#${c.n} ${badge(c.status)} <span class="muted">${esc(c.kind)}</span></div>
-      <blockquote>${esc(c.quote)}</blockquote>
-      ${c.claim ? `<h4>Claim</h4><p>${esc(c.claim)}</p>` : ""}
-      ${c.note ? `<h4>Note</h4><p>${esc(c.note)}</p>` : ""}
-      ${p ? `<h4>Proof</h4>${link(p.url, srcLabel(p))}${p.quote ? `<blockquote>${esc(p.quote)}</blockquote>` : ""}${p.text ? `<h4>Full text</h4><div class="lawtext">${esc(p.text)}</div>` : ""}` : ""}
-      <h4>How we checked</h4><ul>${(c.evidence || []).map((e) => `<li>${esc(e)}</li>`).join("")}</ul>`;
-    document.querySelector(`#grid tr[data-claim="${id}"]`)?.scrollIntoView({ block: "nearest" });
+  function mark(text, term, cls) {
+    const t = esc(text);
+    if (!term) return t;
+    const i = text.toLowerCase().indexOf(term.toLowerCase());
+    if (i < 0) return t;
+    return esc(text.slice(0, i)) + `<span class="${cls}">${esc(text.slice(i, i + term.length))}</span>` + esc(text.slice(i + term.length));
   }
 
+  function chipFor(c) {
+    if (c.status === "NOT_AS_CITED") return `<span class="chip">Nearest real rule</span>`;
+    if (c.status === "POSSIBLE_RULE") return `<span class="chip">Check it applies</span>`;
+    return "";
+  }
+
+  function drawer(c) {
+    const p = c.proof || {};
+    const official = p.quote || p.text?.split("\n")[0] || "";
+    const srcName = c.source || "source";
+    const right = p.url
+      ? `<div class="box"><div class="box-head"><span class="box-label">Official text – ${esc(srcName)}</span><a href="${esc(p.url)}" target="_blank" rel="noopener">View on ${esc(srcName)}<span class="icon" style="font-size:12px">open_in_new</span></a></div>
+         <div class="box-text">${p.title ? `<div class="fine">${esc(p.title)}${p.heading ? " – " + esc(p.heading) : ""}</div>` : ""}“${mark(official, c.diff?.law, "mark-good")}”</div></div>`
+      : `<div class="box"><div class="box-head"><span class="box-label">Official text</span></div><div class="box-text">No official text found.</div></div>`;
+    return `<tr class="drawer"><td colspan="5"><div class="drawer-inner">
+      <div class="compare">
+        <div class="box"><div class="box-head"><span class="box-label">What the letter says</span></div><div class="box-text">“${mark(c.quote, c.diff?.claim, "mark-bad")}”</div></div>
+        ${right}
+      </div>
+      ${c.note ? `<div class="note">${esc(c.note)}</div>` : ""}
+      ${p.text ? `<details class="how full"><summary>Full provision text</summary><pre>${esc(p.text)}</pre></details>` : ""}
+      <details class="how"><summary>How this was checked</summary><ul>${(c.evidence || []).map((e) => `<li>${esc(e)}</li>`).join("")}</ul></details>
+    </div></td></tr>`;
+  }
+
+  function renderCites() {
+    $("#extractor").textContent = `found by ${result.meta.extractor} · ${result.meta.seconds}s`;
+    if (!result.claims.length) { $("#cites").innerHTML = `<div class="empty">No legal references found.</div>`; return; }
+    $("#cites").innerHTML = `<div style="overflow-x:auto"><table class="cites"><thead><tr><th class="n">#</th><th>What the letter says</th><th>Cited law</th><th>Status</th><th>Source</th></tr></thead><tbody>` +
+      result.claims.map((c) => `<tr class="row${openId === c.id ? " open" : ""}" data-row="${c.id}">
+        <td class="n">${c.n}</td>
+        <td>“${esc(c.quote)}”</td>
+        <td class="law${c.cited ? "" : " none"}">${esc(c.cited || "—")}</td>
+        <td>${badge(c.status)}</td>
+        <td class="src">${esc(c.source || "No official text")}${chipFor(c) ? "<br>" + chipFor(c) : ""}</td></tr>${openId === c.id ? drawer(c) : ""}`).join("") +
+      `</tbody></table></div>`;
+  }
+
+  function renderDraft() {
+    $("#draft").innerHTML = result.draft_reply.split(/\n{2,}/).map((p) => `<p>${esc(p)}</p>`).join("");
+  }
+
+  function focusClaim(id, fromText) {
+    openId = openId === id && !fromText ? null : id;
+    if (fromText && !panelOpen()) setPanel(true);
+    renderCites();
+    document.querySelectorAll(".hl").forEach((el) => el.classList.toggle("active", el.dataset.claim === openId));
+    if (fromText) document.querySelector(`tr[data-row="${id}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    else document.querySelector(`.hl[data-claim="${id}"]`)?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+
+  // ---------- events
   document.addEventListener("click", (e) => {
-    const chip = e.target.closest(".chip");
-    if (chip) { filter = filter === chip.dataset.tag ? null : chip.dataset.tag; return applyFilter(); }
-    if (e.target.closest("a, button, textarea")) return;
-    const el = e.target.closest("[data-claim]");
-    if (el && result) select(el.dataset.claim);
+    const t = e.target.closest("[data-claim]");
+    if (t && result) return focusClaim(t.dataset.claim, true);
+    if (e.target.closest("a, details, .drawer")) return;
+    const r = e.target.closest("tr[data-row]");
+    if (r && result) focusClaim(r.dataset.row, false);
   });
-  $("#clear-filter").onclick = () => { filter = null; applyFilter(); };
   $("#btn-run").onclick = run;
-  $("#btn-sample").onclick = async () => { $("#input").value = (await api("/api/sample")).text; $("#input").hidden = false; $("#docview").hidden = true; };
-  $("#btn-edit").onclick = () => { $("#input").hidden = false; $("#docview").hidden = true; };
+  $("#btn-panel").onclick = () => setPanel(!panelOpen());
+  $("#btn-theme").onclick = () => setTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
+  $("#btn-sample").onclick = async () => { $("#input").value = (await api("/api/sample")).text; };
+  $("#btn-edit").onclick = () => { $("#input-wrap").hidden = false; $("#letter").hidden = true; $("#btn-edit").hidden = true; };
+  $("#btn-copy").onclick = async (e) => {
+    try { await navigator.clipboard.writeText($("#draft").innerText); e.target.textContent = "Copied"; } catch (_) { e.target.textContent = "Select and copy"; }
+    setTimeout(() => (e.target.textContent = "Copy"), 2000);
+  };
 
   (async () => {
+    setTheme(document.documentElement.dataset.theme || "light");
+    setPanel(store.get("panel") !== "closed");
+    $("#received").value = new Date().toISOString().slice(0, 10);
     schema = await api("/api/schema");
-    renderParams();
+    $("#org").textContent = schema.org_name;
     const job = new URLSearchParams(location.search).get("job");
-    if (job) { try { const j = await api(`/api/jobs/${job}`); if (j.status === "done") { $("#input").value = j.result.document.text; render(j.result); } else if (j.status === "running") poll(job); } catch (_) {} }
+    if (job) {
+      try {
+        const j = await api(`/api/jobs/${job}`);
+        if (j.status === "done") { $("#input").value = j.result.document.text; $("#received").value = j.result.params.received_date; render(j.result); }
+      } catch (_) {}
+    }
   })();
 })();

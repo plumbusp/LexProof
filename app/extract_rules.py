@@ -18,6 +18,15 @@ PROV_RE = re.compile(
 FCA_RE = re.compile(r"\b(DISP|PRIN|CONC|BCOBS|COBS|SYSC|CONRED)\s*(\d+(?:\.\d+){0,3}[A-Z]?)\s*(R|G)?\b")
 SAME_ACT_RE = re.compile(r"^\s*of\s+(?:the\s+same|that|this|the)\s+(Act|Regulations)\b", re.I)
 OF_THE_RE = re.compile(r"^\s*of\s+(?:the\s+)?", re.I)
+LEAD_RE = re.compile(r"^(?:Under|As|In|Per|By|From|Pursuant to|Also|Furthermore)\s+(?:the\s+)?")
+PROV_AFTER_RE = re.compile(r"^,?\s*(s\.|ss\.|section|reg\.?|regulation|art\.?|article)\s*(\d+[A-Z]{0,2}(?:\(\d+[A-Za-z]?\))*)", re.I)
+_ORDN = r"(?:\d+(?:st|nd|rd|th)|first|second|third|fifth|seventh|tenth|fifteenth|twentieth|thirtieth)"
+DEADLINE_CLAIM_RE = re.compile(
+    r"\b(?:you\s+)?(?:must|should|have to|are required to)\s+(?:reply|respond|answer)[^.]{0,40}?"
+    rf"(?:within|no later than|by)\s+(?:the\s+)?(?:\d+|{_ORDN}|[a-z]+)\s+(?:working\s+|business\s+|calendar\s+)?(?:days?|weeks?|months?)",
+    re.I)
+COST_CLAIM_RE = re.compile(r"\b(?:cannot|can't|can not|may not|are not allowed to|is not allowed to)\s+"
+                           r"(?:refuse[^.]{0,30}?cost|charge[^.]{0,40})", re.I)
 
 INTEREST_RE = re.compile(r"(\d+(?:\.\d+)?)\s*%\s*(?:simple\s+|statutory\s+|compound\s+)?interest", re.I)
 OMBUDSMAN_WAIT_RE = re.compile(
@@ -126,11 +135,20 @@ def extract(text: str):
                                           "pkind": m.group(1), "pid": m.group(2)}))
             taken.append((m.start(), end))
         else:
-            title = m.group(1) if typ == "title" else m.group(0)
+            start = m.start()
+            if typ == "title":  # "Under the Freedom of ... Act 2000" -> drop the leading preposition
+                lead = LEAD_RE.match(text[start:m.end()])
+                if lead:
+                    start += lead.end()
+            title = text[start:m.end()]
             inst = _inst_from_title(title)
             last_inst = inst
-            raw.append((m.start(), m.end(), {"kind": "legislation", "inst": inst, "pkind": "", "pid": ""}))
-            taken.append((m.start(), m.end()))
+            end, pkind, pid = m.end(), "", ""
+            pm = PROV_AFTER_RE.match(text[end:])  # "FOIA s.17(1)", "LGA 1972 s.100Z"
+            if pm:
+                end, pkind, pid = end + pm.end(), pm.group(1), pm.group(2)
+            raw.append((start, end, {"kind": "legislation", "inst": inst, "pkind": pkind, "pid": pid}))
+            taken.append((start, end))
 
     # 2) FCA handbook references
     for m in FCA_RE.finditer(text):
@@ -143,6 +161,11 @@ def extract(text: str):
         if not overlaps(m.start(), m.end()):
             raw.append((m.start(), m.end(), {"kind": "unnamed", "label": m.group(0)}))
             taken.append((m.start(), m.end()))
+    for rx in (DEADLINE_CLAIM_RE, COST_CLAIM_RE):  # implicit claims (Gemini finds more)
+        for m in rx.finditer(text):
+            if not overlaps(m.start(), m.end()):
+                raw.append((m.start(), m.end(), {"kind": "unnamed", "label": m.group(0)}))
+                taken.append((m.start(), m.end()))
     for m in OMBUDSMAN_WAIT_RE.finditer(text):
         if not overlaps(m.start(), m.end()):
             raw.append((m.start(), m.end(), {"kind": "regulator_rule", "rule": "DISP_1_6", "label": m.group(0)}))

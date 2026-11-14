@@ -33,6 +33,16 @@ def add_working_days(start: date, n: int, hols: set[str]) -> date:
     return d
 
 
+def working_days_between(start: date, end: date, hols: set[str]) -> int:
+    """Working days after `start` up to and including `end`."""
+    n, d = 0, start
+    while d < end:
+        d += timedelta(days=1)
+        if d.weekday() < 5 and d.isoformat() not in hols:
+            n += 1
+    return n
+
+
 def add_months(d: date, months: int) -> date:
     m = d.month - 1 + months
     y, m = d.year + m // 12, m % 12 + 1

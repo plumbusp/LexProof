@@ -3,49 +3,130 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Request Law Checker</title>
+<title>Citation Checker</title>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem("theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")}catch(e){document.documentElement.dataset.theme="light"}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@300,0&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/app.css">
 </head>
 <body>
 <header class="topbar">
-  <div class="brand">Request Law Checker <span class="engines" id="engines"></span></div>
-  <div class="actions">
-    <button type="button" id="btn-sample" class="ghost">Load sample</button>
-    <button type="button" id="btn-edit" class="ghost" hidden>Edit text</button>
-    <button type="button" id="btn-run" class="primary">Check</button>
+  <div class="brand">
+    <span class="brand-name">Citation Checker</span><span class="slash">/</span><span class="org" id="org"></span>
   </div>
-  <form id="params" class="params" autocomplete="off"></form>
+  <nav class="tabs" aria-label="Views">
+    <a class="tab" href="#home" data-view="home">Home</a>
+    <a class="tab" href="#panel" data-view="panel">Complaint Reviewer Panel</a>
+    <a class="tab" href="#map" data-view="map">Regional Abuse Map</a>
+  </nav>
+  <div class="controls">
+    <div class="panel-controls" data-only="panel">
+      <label>Received <input type="date" id="received"></label>
+      <button class="btn primary" id="btn-run" type="button"><span class="icon">rule</span>Check</button>
+      <button class="btn" id="btn-panel" type="button" aria-pressed="true" title="Show or hide suggestions"><span class="icon">right_panel_close</span>Suggestions</button>
+    </div>
+    <button class="btn icon-only" id="btn-theme" type="button" title="Light / dark"><span class="icon" id="theme-icon">dark_mode</span></button>
+  </div>
 </header>
 
-<section id="preview" class="preview" hidden>
-  <div class="headline" id="headline"></div>
-  <div class="chips" id="tags"></div>
-  <div class="preview-row">
-    <div class="card" id="deadlines"></div>
-    <div class="card" id="reply"></div>
+<!-- Home -->
+<main class="view home" id="view-home" data-view-section="home" hidden>
+  <div class="home-inner">
+    <p class="eyebrow">For UK public bodies</p>
+    <h1>Every law a letter cites, checked against the official text.</h1>
+    <p class="lede">Requests and complaints to public institutions often quote the law, sometimes correctly, sometimes not, and more and more often in large AI-written waves.
+      We find each legal reference, check it against legislation.gov.uk, and show where in Europe institutions report being flooded with mass submissions.</p>
+
+    <div class="home-links">
+      <a class="home-link" href="#panel">
+        <span class="home-link-title">Complaint Reviewer Panel <span class="icon">arrow_forward</span></span>
+        <span class="home-link-text">Paste a request. See each citation checked against the real text, the reply deadline and a draft reply.</span>
+      </a>
+      <a class="home-link" href="#map">
+        <span class="home-link-title">Regional Abuse Map <span class="icon">arrow_forward</span></span>
+        <span class="home-link-text">Where across Europe public institutions report mass submissions. Every dot links to a source and a quote.</span>
+      </a>
+    </div>
+
+    <p class="fine home-foot">The officer decides. Nothing is sent from here.</p>
   </div>
-  <div class="warnings" id="warnings"></div>
-</section>
-
-<div id="progress" class="progress" hidden></div>
-
-<main class="layout">
-  <section class="doc card">
-    <div class="card-title">Original text <span class="legend" id="legend"></span></div>
-    <textarea id="input" placeholder="Paste a request or complaint here, or load the sample."></textarea>
-    <div id="docview" class="docview" hidden></div>
-  </section>
-  <aside class="detail card" id="detail">
-    <div class="card-title">Details</div>
-    <p class="muted">Click a highlighted passage or a table row.</p>
-  </aside>
 </main>
 
-<section class="card grid-wrap" id="grid-wrap" hidden>
-  <div class="card-title">Legal references <button class="link" id="clear-filter" hidden>clear filter</button></div>
-  <div class="grid-scroll"><table class="grid" id="grid"></table></div>
-</section>
+<!-- Complaint Reviewer Panel -->
+<main class="view page" id="view-panel" data-view-section="panel" hidden>
+  <section class="kpis" id="kpis" hidden></section>
+  <div class="warn-line" id="warn" hidden></div>
+
+  <div class="workspace" id="workspace">
+    <section class="card request">
+      <div class="section-head">
+        <div>
+          <h2>Original request</h2>
+          <div class="section-sub" id="request-sub">Paste a request or complaint, then press Check.</div>
+        </div>
+        <button class="btn" id="btn-edit" type="button" hidden><span class="icon">edit</span>Edit</button>
+      </div>
+      <div class="progress" id="progress" hidden></div>
+      <div class="input-wrap" id="input-wrap">
+        <textarea class="input" id="input" placeholder="Paste the request text here…"></textarea>
+        <div class="input-actions"><button class="btn" id="btn-sample" type="button">Load sample</button></div>
+      </div>
+      <div class="letter" id="letter" hidden></div>
+    </section>
+
+    <div class="side" id="side">
+      <section class="card asks" id="asks" hidden></section>
+      <section class="card">
+        <div class="section-head"><h2>Citations checked</h2><span class="fine" id="extractor"></span></div>
+        <div id="cites"><div class="empty">Results appear here after a check.</div></div>
+      </section>
+      <section class="card">
+        <div class="section-head">
+          <h2>Draft reply</h2>
+          <button class="btn" id="btn-copy" type="button">Copy</button>
+        </div>
+        <div class="reply-body">
+          <div class="draft" id="draft" contenteditable="true"><p class="fine">A draft appears here after a check.</p></div>
+          <div class="fine">Nothing is sent from here.</div>
+        </div>
+      </section>
+    </div>
+  </div>
+</main>
+
+<!-- Regional Abuse Map -->
+<main class="view page" id="view-map" data-view-section="map" hidden>
+  <div class="map-head">
+    <div>
+      <h2>Regional Abuse Map</h2>
+      <div class="section-sub">Evidence that public institutions are being flooded with mass submissions. EU-27, UK and Switzerland.</div>
+    </div>
+    <div class="legend" aria-label="Legend">
+      <span class="legend-item"><span class="sw sw-hatch"></span>0 · nothing found, not safe</span>
+      <span class="legend-item"><span class="sw lv-1"></span>1</span>
+      <span class="legend-item"><span class="sw lv-2"></span>2</span>
+      <span class="legend-item"><span class="sw lv-3"></span>3</span>
+      <span class="legend-item"><span class="sw lv-4"></span>4 · strongest evidence</span>
+    </div>
+  </div>
+
+  <div class="map-layout">
+    <section class="card map-card">
+      <div class="map-status fine" id="map-status">Loading map…</div>
+      <div class="map-canvas" id="map-canvas"></div>
+    </section>
+    <aside class="card map-side" id="map-side">
+      <div class="empty">Select a country to see its events.</div>
+    </aside>
+  </div>
+
+  <p class="fine map-foot">Reported or warned, not proven attack. Levels are set by rules, not by AI.</p>
+</main>
 
 <script src="/static/app.js"></script>
+<script src="/static/map.js"></script>
+<script src="/static/views.js"></script>
 </body>
 </html>

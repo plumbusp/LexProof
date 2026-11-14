@@ -14,7 +14,7 @@ INSTRUMENT_ALIASES = [
     (r"Data Protection Act\s*2018|\bDPA\s*2018\b", ("Data Protection Act 2018", "ukpga", "2018", "12")),
     (r"Local Government \(Access to Information\) Act\s*1985",
      ("Local Government (Access to Information) Act 1985", "ukpga", "1985", "43")),
-    (r"Local Government Act\s*1972", ("Local Government Act 1972", "ukpga", "1972", "70")),
+    (r"Local Government Act\s*1972|\bLGA\s*1972\b", ("Local Government Act 1972", "ukpga", "1972", "70")),
     (r"Local Government Act\s*2000", ("Local Government Act 2000", "ukpga", "2000", "22")),
     (r"Localism Act\s*2011", ("Localism Act 2011", "ukpga", "2011", "20")),
     (r"Human Rights Act\s*1998", ("Human Rights Act 1998", "ukpga", "1998", "42")),
@@ -65,10 +65,38 @@ def parse_provision(text: str, leg_type: str):
 
 def parse_url(url: str):
     m = _URL_RE.search(url or "")
-    if not m:
+    if not m or "/notes" in url or "/memorandum" in url:  # explanatory notes are not law
         return None
     return {"type": m.group(1), "year": m.group(2), "number": m.group(3),
             "kind": m.group(4) or "", "pid": (m.group(5) or "").rstrip(".") if m.group(5) else ""}
+
+
+SHORT = {"ukpga/2000/36": "FOIA", "uksi/2004/3391": "EIR", "eur/2016/679": "UK GDPR", "ukpga/2018/12": "DPA 2018",
+         "ukpga/1972/70": "LGA 1972", "ukpga/2000/22": "LGA 2000", "ukpga/1985/43": "LG(AI)A 1985",
+         "asp/2002/13": "FOISA", "ukpga/1998/42": "HRA 1998", "ukpga/2010/15": "Equality Act 2010",
+         "ukpga/2023/54": "Procurement Act 2023", "ukpga/2011/20": "Localism Act 2011"}
+_ABBR = [(r"^\s*sections?\s*", "s."), (r"^\s*regulations?\s*", "reg "), (r"^\s*articles?\s*", "art "),
+         (r"^\s*schedule\s*", "sch ")]
+
+
+def cited_label(act_name: str, provision: str) -> str:
+    """'Freedom of Information Act 2000', 'section 10(1)' -> 'FOIA s.10(1)'."""
+    law = lookup(act_name)
+    name = SHORT.get(f"{law['type']}/{law['year']}/{law['number']}", law["title"]) if law else (act_name or "")
+    prov = provision or ""
+    for pat, rep in _ABBR:
+        prov = re.sub(pat, rep, prov, flags=re.I)
+    return f"{name} {prov.replace(' ', '') if prov.startswith('s.') else prov}".strip()
+
+
+def label_from_url(url: str) -> str:
+    """https://.../ukpga/2000/36/section/10 -> 'FOIA s.10'"""
+    p = parse_url(url)
+    if not p:
+        return ""
+    name = SHORT.get(f"{p['type']}/{p['year']}/{p['number']}", f"{p['type']} {p['year']}/{p['number']}")
+    abbr = {"section": "s.", "regulation": "reg ", "article": "art ", "schedule": "sch "}.get(p["kind"], "")
+    return f"{name} {abbr}{p['pid']}".strip()
 
 
 def normalise_title(t: str) -> str:

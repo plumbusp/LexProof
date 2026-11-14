@@ -17,6 +17,7 @@ class Ref(BaseModel):
 
 
 class Refs(BaseModel):
+    asks: list[str]
     references: list[Ref]
 
 
@@ -35,7 +36,10 @@ For each reference return:
 - provision: e.g. "section 10", "regulation 5", "article 15", or ""
 - claim: one short sentence stating what the writer says the law requires
 
-Return JSON only: {"references": [...]}"""
+Also return asks: up to 3 short plain sentences for the officer saying what the writer is asking for and what they
+assert (e.g. "Asks for the contract and scoring documents for X", "Claims a 10-day deadline").
+
+Return JSON only: {"asks": [...], "references": [...]}"""
 
 
 def _schema():
@@ -55,7 +59,7 @@ def _schema():
     return s
 
 
-def extract(text: str) -> list[Ref]:
+def extract(text: str) -> Refs:
     from openai import OpenAI
     kw = {"api_key": settings.ai_api_key, "timeout": 120, "max_retries": 2}
     if settings.ai_base_url:
@@ -68,7 +72,7 @@ def extract(text: str) -> list[Ref]:
         try:
             resp = client.chat.completions.create(model=settings.ai_model, messages=messages, response_format=fmt)
             content = resp.choices[0].message.content or ""
-            return Refs.model_validate(json.loads(content)).references
+            return Refs.model_validate(json.loads(content))
         except Exception as e:  # provider rejected the format or returned bad JSON: try the next format
             last = e
     raise RuntimeError(f"Gemini extraction failed: {str(last)[:300]}")
