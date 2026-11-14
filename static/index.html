@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Complaint Citation Checker</title>
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">Complaint Citation Checker <span class="engines" id="engines"></span></div>
+  <form id="params" class="params" autocomplete="off"></form>
+  <div class="actions">
+    <button type="button" id="btn-sample" class="ghost">Load sample</button>
+    <button type="button" id="btn-edit" class="ghost" hidden>Edit text</button>
+    <button type="button" id="btn-run" class="primary">Check complaint</button>
+  </div>
+</header>
+
+<section id="preview" class="preview" hidden>
+  <div class="headline" id="headline"></div>
+  <div class="chips" id="tags"></div>
+  <div class="preview-row">
+    <div class="card" id="core"></div>
+    <div class="card" id="deadlines"></div>
+  </div>
+  <div class="warnings" id="warnings"></div>
+</section>
+
+<div id="progress" class="progress" hidden></div>
+
+<main class="layout">
+  <section class="doc card">
+    <div class="card-title">Original complaint <span class="legend" id="legend"></span></div>
+    <textarea id="input" placeholder="Paste a complaint here, or load the sample."></textarea>
+    <div id="docview" class="docview" hidden></div>
+  </section>
+  <aside class="detail card" id="detail">
+    <div class="card-title">Details</div>
+    <p class="muted">Click a highlighted passage or a table row.</p>
+  </aside>
+</main>
+
+<section class="card grid-wrap" id="grid-wrap" hidden>
+  <div class="card-title">Claims to evaluate <button class="link" id="clear-filter" hidden>clear filter</button></div>
+  <div class="grid-scroll"><table class="grid" id="grid"></table></div>
+</section>
+
+<section class="card" id="precedents" hidden></section>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
