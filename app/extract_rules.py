@@ -3,7 +3,7 @@ whether anything was missed; it never replaces this step."""
 import re
 from dataclasses import dataclass, field
 
-from . import registry
+from . import laws as registry
 from .textutil import sentence_spans
 from .timeexpr import parse_durations
 
@@ -16,7 +16,7 @@ PROV_RE = re.compile(
     r"\b(section|sections|s\.|ss\.|regulation|regulations|reg\.?|article|art\.?|rule|paragraph|para\.?|schedule)"
     r"\s*(\d+[A-Z]{0,2}(?:\(\d+[A-Za-z]?\))*)", re.I)
 FCA_RE = re.compile(r"\b(DISP|PRIN|CONC|BCOBS|COBS|SYSC|CONRED)\s*(\d+(?:\.\d+){0,3}[A-Z]?)\s*(R|G)?\b")
-SAME_ACT_RE = re.compile(r"^\s*of\s+(?:the\s+same|that|this)\s+(Act|Regulations)", re.I)
+SAME_ACT_RE = re.compile(r"^\s*of\s+(?:the\s+same|that|this|the)\s+(Act|Regulations)\b", re.I)
 OF_THE_RE = re.compile(r"^\s*of\s+(?:the\s+)?", re.I)
 
 INTEREST_RE = re.compile(r"(\d+(?:\.\d+)?)\s*%\s*(?:simple\s+|statutory\s+|compound\s+)?interest", re.I)

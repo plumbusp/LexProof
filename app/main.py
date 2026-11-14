@@ -8,7 +8,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import cache, pipeline, taxonomy
+from . import cache, pipeline
 from .config import ROOT, settings
 
 app = FastAPI(title="Complaint citation checker", version="0.2")
@@ -48,12 +48,12 @@ def health():
 
 @app.get("/api/schema")
 def schema():
-    return taxonomy.view_schema(settings.ai_enabled, settings.exa_enabled)
+    return pipeline.view()
 
 
 @app.get("/api/sample")
 def sample():
-    return {"text": (ROOT / "samples" / "margaret_ellis.txt").read_text(encoding="utf-8")}
+    return {"text": (ROOT / "samples" / "foi_request.txt").read_text(encoding="utf-8")}
 
 
 @app.post("/api/analyze")

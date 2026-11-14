@@ -16,7 +16,7 @@ _PROVIDER_URLS = {
 @dataclass(frozen=True)
 class Settings:
     exa_api_key: str = os.getenv("EXA_API_KEY", "")
-    ai_provider: str = os.getenv("AI_PROVIDER", "openai").lower()
+    ai_provider: str = os.getenv("AI_PROVIDER", "gemini").lower()
     ai_api_key: str = os.getenv("AI_API_KEY", "")
     ai_model: str = os.getenv("AI_MODEL", "")
     ai_base_url_override: str = os.getenv("AI_BASE_URL", "")

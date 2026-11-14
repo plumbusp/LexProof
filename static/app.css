@@ -55,6 +55,7 @@ button:disabled { opacity: .6; cursor: progress; }
 .sev-muted { background: var(--muted-bg); color: var(--muted); }
 .preview-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .warnings { color: var(--warn); font-size: 12px; margin-top: 8px; }
+textarea.reply { min-height: 180px; font-size: 13px; }
 .progress { margin: 10px 16px 0; padding: 10px 12px; background: var(--panel); border: 1px solid var(--border);
   border-radius: var(--radius); font-size: 13px; color: var(--muted); }
 .progress li.done { color: var(--text); }
@@ -96,7 +97,7 @@ textarea { width: 100%; min-height: 420px; resize: vertical; font: 14px/1.6 var(
 .grid td { border-bottom: 1px solid var(--border); padding: 8px; vertical-align: top; min-width: 90px; }
 .grid td:nth-child(1) { min-width: 28px; }
 .grid td:nth-child(2), .grid td:nth-child(5) { min-width: 240px; }
-.grid td:nth-child(3), .grid td:nth-child(7), .grid td:nth-child(8) { min-width: 180px; }
+.grid td:nth-child(6) { min-width: 200px; }
 .grid tr { cursor: pointer; }
 .grid tr:hover td { background: var(--bg); }
 .grid tr.selected td { background: var(--info-bg); }

@@ -56,8 +56,24 @@ def test_find_span_tolerates_quotes_and_case():
     assert not is_verbatim("within 24 hours", "end of the business day following")
 
 
-def test_business_days_over_christmas():
+def test_foi_deadline_uk_wide_holidays():
     hols = deadlines._FALLBACK
-    assert deadlines.add_business_days(date(2026, 11, 14), 15, hols) == date(2026, 12, 4)
-    assert deadlines.add_business_days(date(2026, 11, 14), 35, hols) == date(2027, 1, 6)
+    # 14 Nov 2026 (Sat) + 20 working days; St Andrew's Day 30 Nov (Scotland) is excluded under FOIA s.10(6)
+    assert deadlines.add_working_days(date(2026, 11, 14), 20, hols) == date(2026, 12, 14)
     assert deadlines.add_months(date(2027, 1, 31), 1) == date(2027, 2, 28)
+
+
+def test_ordinal_working_day():
+    law = parse_durations("not later than the twentieth working day following the date of receipt")
+    assert compare(parse_durations("within 10 working days")[0], law) == "differs"
+    assert compare(parse_durations("within 20 working days")[0], law) == "match"
+    assert parse_durations("a day which is a bank holiday") == []
+
+
+def test_law_dictionary_and_urls():
+    from app import laws
+    assert laws.lookup("FOIA")["number"] == "36"
+    assert laws.parse_provision("s.10(1)", "ukpga") == ("section", "10")
+    assert laws.parse_provision("reg 5", "uksi") == ("regulation", "5")
+    assert laws.parse_url("https://www.legislation.gov.uk/ukpga/2000/36/section/12/2005-01-01") == {
+        "type": "ukpga", "year": "2000", "number": "36", "kind": "section", "pid": "12"}

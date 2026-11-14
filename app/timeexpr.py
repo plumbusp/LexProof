@@ -6,12 +6,17 @@ from dataclasses import dataclass
 _WORDS = {w: i for i, w in enumerate(
     "zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen "
     "seventeen eighteen nineteen twenty".split())}
-_WORDS.update({"thirty": 30, "thirty-five": 35, "forty": 40, "sixty": 60, "a": 1, "an": 1})
+_WORDS.update({"thirty": 30, "thirty-five": 35, "forty": 40, "sixty": 60})
 
-_NUM = r"(\d+|" + "|".join(sorted((re.escape(w) for w in _WORDS), key=len, reverse=True)) + r")"
+_NUM = r"\b(\d+|" + "|".join(sorted((re.escape(w) for w in _WORDS), key=len, reverse=True)) + r")"
 _DUR = re.compile(_NUM + r"(?:\s*\(\d+\))?\s+(business\s+|working\s+|calendar\s+|clear\s+)?(hours?|days?|weeks?|months?|years?)\b",
                   re.I)
 _NEXT_BD = re.compile(r"end of the business day following|next business day|following business day", re.I)
+_ORD = {w: i + 1 for i, w in enumerate(
+    "first second third fourth fifth sixth seventh eighth ninth tenth eleventh twelfth thirteenth fourteenth "
+    "fifteenth sixteenth seventeenth eighteenth nineteenth twentieth".split())}
+_ORD.update({"thirtieth": 30, "fortieth": 40, "sixtieth": 60})
+_ORD_RE = re.compile(r"\b(" + "|".join(_ORD) + r"|\d+(?:st|nd|rd|th))\s+(working|business)\s+day\b", re.I)
 
 
 @dataclass(frozen=True)
@@ -35,6 +40,9 @@ def parse_durations(text: str):
         unit = m.group(3).lower().rstrip("s")
         business = bool(m.group(2) and m.group(2).strip().lower() in ("business", "working"))
         found.append(Duration(val, unit, business, m.group(0)))
+    for m in _ORD_RE.finditer(text):  # "the twentieth working day following receipt"
+        w = m.group(1).lower()
+        found.append(Duration(_ORD.get(w) or int(re.sub(r"\D", "", w)), "day", True, m.group(0)))
     for m in _NEXT_BD.finditer(text):
         found.append(Duration(1, "next_business_day", True, m.group(0)))
     return found
