@@ -14,7 +14,7 @@
 <body>
 <header class="topbar">
   <div class="brand">
-    <a class="brand-name" href="#home">LexProof</a><span class="slash">/</span><span class="org" id="org"></span>
+    <a class="brand-name" href="#home">LexProof</a><span class="slash">/</span><span class="org" id="org" title="Demo workspace. LexProof is not affiliated with this council."></span><span class="demo-tag" title="Demo workspace. LexProof is not affiliated with this council.">Demo</span>
   </div>
   <nav class="tabs" aria-label="Views">
     <a class="tab" href="#home" data-view="home">Home</a>
@@ -23,7 +23,6 @@
   </nav>
   <div class="controls">
     <div class="panel-controls" data-only="panel">
-      <label>Received <input type="date" id="received"></label>
       <button class="btn primary" id="btn-run" type="button"><span class="icon">rule</span>Check</button>
       <button class="btn" id="btn-panel" type="button" aria-pressed="true" title="Show or hide suggestions"><span class="icon">right_panel_close</span>Suggestions</button>
     </div>
@@ -41,6 +40,12 @@
 
   <section class="hero">
     <h1 class="sr-only">LexProof</h1>
+    <div class="demo-note">
+      <svg class="demo-arc" width="60" height="66" viewBox="0 0 60 66" aria-hidden="true">
+        <path d="M14 63 C56 52 20 30 20 4" /><path d="M13.5 11 L20 4 L26.5 11" />
+      </svg>
+      <p>This is a demo workspace.<br>We set one up for your organisation.</p>
+    </div>
     <div class="hero-slot" id="hero-slot"></div>
     <div class="hero-text">
       <p class="hero-tag">Shining a light on every law a letter cites.</p>
@@ -113,12 +118,23 @@
     <div class="gen-bar">
       <div class="gen-intro">
         <span class="gen-title">Need a letter to test?</span>
-        <span class="gen-sub">Generate a realistic complaint that quotes real, misquoted and invented law.</span>
+        <span class="gen-sub">Get a realistic complaint that quotes real, misquoted and invented law.</span>
       </div>
-      <button class="btn primary" id="btn-gen" type="button" aria-expanded="false" aria-controls="gen-body">
-        <span class="icon">edit_note</span>Generate complaint</button>
+      <div class="gen-modes">
+        <button class="btn gen-btn gen-mode" id="btn-samples" type="button" data-mode="samples" aria-pressed="true" aria-controls="gen-body">
+          <span class="icon">description</span><span class="gen-btn-label">Use samples</span><span class="gen-wait">no wait</span></button>
+        <button class="btn gen-btn gen-mode" id="btn-gen" type="button" data-mode="ai" aria-pressed="false" aria-controls="gen-body">
+          <span class="icon">auto_awesome</span><span class="gen-btn-label">Generate complaint</span><span class="gen-wait">wait ~10 s</span></button>
+      </div>
     </div>
-    <div class="gen-body" id="gen-body" hidden>
+    <div class="gen-body" id="gen-body" data-mode="samples">
+      <div class="gen-row">
+        <label class="gen-label" for="received">Received</label>
+        <div class="gen-country">
+          <input type="date" id="received" class="gen-date">
+          <span class="gen-note">The date the letter arrived. The reply deadline counts from here.</span>
+        </div>
+      </div>
       <div class="gen-row">
         <span class="gen-label">Country</span>
         <div class="gen-country">
@@ -128,7 +144,15 @@
       </div>
       <div class="gen-row">
         <span class="gen-label">Area</span>
-        <div class="gen-areas" id="gen-areas"></div>
+        <div class="gen-areas" id="gen-areas" role="radiogroup" aria-label="Area"></div>
+      </div>
+      <div class="gen-row">
+        <span class="gen-label">Letter</span>
+        <div class="gen-actions">
+          <button class="btn primary gen-btn" id="btn-gen-ai" type="button" title="A new letter written by AI">
+            <span class="icon">auto_awesome</span><span class="gen-btn-label">Write the letter</span><span class="gen-wait">wait ~10 s</span></button>
+          <div class="gen-presets" id="gen-presets"></div>
+        </div>
       </div>
     </div>
     <div class="gen-status" id="gen-status" hidden></div>
@@ -149,7 +173,6 @@
       <div class="progress" id="progress" hidden></div>
       <div class="input-wrap" id="input-wrap">
         <textarea class="input" id="input" placeholder="Paste the request text here…"></textarea>
-        <div class="input-actions"><button class="btn" id="btn-sample" type="button">Load sample</button></div>
       </div>
       <div class="letter" id="letter" hidden></div>
     </section>

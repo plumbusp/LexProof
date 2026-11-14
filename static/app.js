@@ -49,6 +49,19 @@
   }
   function progress(msg, err) { const el = $("#progress"); el.hidden = false; el.innerHTML = err ? `<span class="err">${esc(msg)}</span>` : esc(msg); }
 
+  // A new letter means the old results no longer apply: back to the empty state.
+  function clearResults() {
+    result = null; openId = null;
+    $("#kpis").hidden = true; $("#kpis").innerHTML = "";
+    $("#warn").hidden = true; $("#asks").hidden = true; $("#progress").hidden = true;
+    $("#extractor").textContent = "";
+    $("#cites").innerHTML = `<div class="empty">Results appear here after a check.</div>`;
+    $("#draft").innerHTML = `<p class="fine">A draft appears here after a check.</p>`;
+    $("#request-sub").textContent = "Paste a request or complaint, then press Check.";
+    $("#input-wrap").hidden = false; $("#letter").hidden = true; $("#letter").innerHTML = ""; $("#btn-edit").hidden = true;
+    history.replaceState(null, "", location.pathname + location.hash);
+  }
+
   // ---------- render
   function render(res) {
     result = res; schema = res.view || schema; openId = null;
@@ -163,45 +176,65 @@
   $("#btn-run").onclick = run;
   $("#btn-panel").onclick = () => setPanel(!panelOpen());
   $("#btn-theme").onclick = () => setTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
-  $("#btn-sample").onclick = async () => { $("#input").value = (await api("/api/sample")).text; };
   $("#btn-edit").onclick = () => { $("#input-wrap").hidden = false; $("#letter").hidden = true; $("#btn-edit").hidden = true; };
 
   // ---------- generate a test complaint (UK only in this demo)
+  // Pick an area, then either let AI write a new letter (wait) or load a hand-written preset (instant).
+  let genAreasList = [], genArea = null;
   function genStatus(html, err) { const el = $("#gen-status"); el.hidden = !html; el.innerHTML = html; el.classList.toggle("err", !!err); }
-  function genOpen(open) {
-    $("#gen-body").hidden = !open;
-    $("#btn-gen").setAttribute("aria-expanded", String(open));
+  // Always open. Two modes with the same choices: "Use samples" (ready-made, no wait, the default)
+  // or "Generate complaint" (AI writes a new letter, wait).
+  function genMode(mode) {
+    $("#gen-body").dataset.mode = mode;
+    document.querySelectorAll(".gen-mode").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.mode === mode)));
   }
-  $("#btn-gen").onclick = () => genOpen($("#gen-body").hidden);
+  document.querySelectorAll(".gen-mode").forEach((b) => (b.onclick = () => genMode(b.dataset.mode)));
+  const areaName = (a) => `${a.short} (${a.name})`;
+  function genSelect(id) {
+    genArea = genAreasList.find((a) => a.id === id) || genAreasList[0];
+    document.querySelectorAll(".gen-area").forEach((x) => x.setAttribute("aria-checked", String(x.dataset.area === genArea.id)));
+    $("#gen-presets").innerHTML = genArea.presets.map((p) =>
+      `<button type="button" class="btn gen-btn gen-preset" data-preset="${esc(p.id)}"><span class="icon">description</span><span class="gen-btn-label">${esc(p.title)}</span><span class="gen-wait">no wait</span></button>`).join("");
+  }
   async function genAreas() {
-    const { areas } = await api("/api/generate/options");
-    $("#gen-areas").innerHTML = areas.map((a) => `
-      <button type="button" class="gen-area" data-area="${esc(a.id)}">
+    genAreasList = (await api("/api/generate/options")).areas;
+    $("#gen-areas").innerHTML = genAreasList.map((a) => `
+      <button type="button" class="gen-area" role="radio" aria-checked="false" data-area="${esc(a.id)}">
         <span class="gen-area-head"><span class="gen-short">${esc(a.short)}</span><span class="gen-name">${esc(a.name)}</span></span>
         <span class="gen-law">${esc(a.law)}</span>
         <span class="gen-about">${esc(a.about)}</span>
       </button>`).join("");
+    genSelect(genAreasList[0].id);
   }
-  $("#gen-areas").addEventListener("click", async (e) => {
+  $("#gen-areas").addEventListener("click", (e) => {
     const b = e.target.closest(".gen-area");
-    if (!b) return;
-    const name = `${b.querySelector(".gen-short").textContent} (${b.querySelector(".gen-name").textContent})`;
-    document.querySelectorAll(".gen-area").forEach((x) => { x.disabled = true; x.classList.toggle("busy", x === b); });
-    genStatus(`<span class="spin"></span>Writing a ${esc(name)} letter…`);
+    if (b && !b.disabled) genSelect(b.dataset.area);
+  });
+  async function genLetter(preset) {
+    const name = areaName(genArea), busy = document.querySelectorAll(".gen-area, .gen-preset, #btn-gen-ai");
+    busy.forEach((x) => (x.disabled = true));
+    if (!preset) genStatus(`<span class="spin"></span>Writing a new ${esc(name)} letter…`);
     try {
       const r = await api("/api/generate", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ area: b.dataset.area, country: "UK" }) });
+        body: JSON.stringify({ area: genArea.id, country: "UK", preset }) });
+      clearResults();
       $("#input").value = r.text;
-      $("#input-wrap").hidden = false; $("#letter").hidden = true; $("#btn-edit").hidden = true;
-      genOpen(false);
-      genStatus(`<span class="icon">check_circle</span>${esc(name)} letter ready${r.source === "template" ? " (built-in example)" : ""}. Press <b>Check</b> to see every law it cites checked.`);
+      const what = r.source === "preset" ? `Sample ${esc(name)} letter "${esc(r.title)}" loaded`
+        : r.source === "fallback" ? `AI was unavailable, so a sample ${esc(name)} letter was loaded`
+        : `New ${esc(name)} letter ready`;
+      genStatus(`<span class="icon">check_circle</span>${what}. Press <b>Check</b> to see every law it cites checked.`);
       $("#btn-run").classList.add("pulse");
       setTimeout(() => $("#btn-run").classList.remove("pulse"), 4000);
       $("#input").scrollIntoView({ behavior: "smooth", block: "center" });
     } catch (err) {
       genStatus(`Could not generate a letter: ${esc(err.message)}`, true);
     }
-    document.querySelectorAll(".gen-area").forEach((x) => { x.disabled = false; x.classList.remove("busy"); });
+    busy.forEach((x) => (x.disabled = false));
+  }
+  $("#btn-gen-ai").onclick = () => genLetter(null);
+  $("#gen-presets").addEventListener("click", (e) => {
+    const b = e.target.closest(".gen-preset");
+    if (b && !b.disabled) genLetter(b.dataset.preset);
   });
   genAreas().catch(() => genStatus("Could not load the letter types.", true));
   $("#btn-copy").onclick = async (e) => {

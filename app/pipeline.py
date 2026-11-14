@@ -13,7 +13,7 @@ from .config import settings
 from .extract_rules import extract as rule_extract
 from .textutil import find_span
 
-ORG_NAME = os.getenv("ORG_NAME", "Northgate Borough Council")
+ORG_NAME = os.getenv("ORG_NAME", "Camden Council")
 SEV = {s["code"]: s["severity"] for s in STATUSES}
 PARAMETERS = [{"key": "received_date", "label": "Received", "type": "date", "default": "today"}]
 

@@ -15,6 +15,7 @@ INSTRUMENT_ALIASES = [
     (r"Local Government \(Access to Information\) Act\s*1985",
      ("Local Government (Access to Information) Act 1985", "ukpga", "1985", "43")),
     (r"Local Government Act\s*1972|\bLGA\s*1972\b", ("Local Government Act 1972", "ukpga", "1972", "70")),
+    (r"Local Government Act\s*1974|\bLGA\s*1974\b", ("Local Government Act 1974", "ukpga", "1974", "7")),
     (r"Local Government Act\s*2000", ("Local Government Act 2000", "ukpga", "2000", "22")),
     (r"Localism Act\s*2011", ("Localism Act 2011", "ukpga", "2011", "20")),
     (r"Human Rights Act\s*1998", ("Human Rights Act 1998", "ukpga", "1998", "42")),
@@ -26,6 +27,7 @@ INSTRUMENT_ALIASES = [
     (r"Town and Country Planning Act\s*1990", ("Town and Country Planning Act 1990", "ukpga", "1990", "8")),
     (r"Payment Services Regulations\s*2017|\bPSRs\b", ("The Payment Services Regulations 2017", "uksi", "2017", "752")),
     (r"Consumer Rights Act\s*2015", ("Consumer Rights Act 2015", "ukpga", "2015", "15")),
+    (r"Consumer Credit Act\s*1974|\bCCA\s*1974\b", ("Consumer Credit Act 1974", "ukpga", "1974", "39")),
     (r"Financial Services and Markets Act\s*2000|\bFSMA\b",
      ("Financial Services and Markets Act 2000", "ukpga", "2000", "8")),
 ]
@@ -72,7 +74,7 @@ def parse_url(url: str):
 
 
 SHORT = {"ukpga/2000/36": "FOIA", "uksi/2004/3391": "EIR", "eur/2016/679": "UK GDPR", "ukpga/2018/12": "DPA 2018",
-         "ukpga/1972/70": "LGA 1972", "ukpga/2000/22": "LGA 2000", "ukpga/1985/43": "LG(AI)A 1985",
+         "ukpga/1972/70": "LGA 1972", "ukpga/1974/7": "LGA 1974", "ukpga/2000/22": "LGA 2000", "ukpga/1985/43": "LG(AI)A 1985",
          "asp/2002/13": "FOISA", "ukpga/1998/42": "HRA 1998", "ukpga/2010/15": "Equality Act 2010",
          "ukpga/2023/54": "Procurement Act 2023", "ukpga/2011/20": "Localism Act 2011"}
 _ABBR = [(r"^\s*sections?\s*", "s."), (r"^\s*regulations?\s*", "reg "), (r"^\s*articles?\s*", "art "),

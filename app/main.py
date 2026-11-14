@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime, timezone
 
 from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import FileResponse
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -52,14 +52,10 @@ def schema():
     return pipeline.view()
 
 
-@app.get("/api/sample")
-def sample():
-    return {"text": (ROOT / "samples" / "foi_request.txt").read_text(encoding="utf-8")}
-
-
 class GenerateRequest(BaseModel):
     area: str
     country: str = "UK"
+    preset: str | None = None
 
 
 @app.get("/api/generate/options")
@@ -70,7 +66,7 @@ def generate_options():
 @app.post("/api/generate")
 def generate_letter(req: GenerateRequest):
     try:
-        return generate.generate(req.area, req.country)
+        return generate.generate(req.area, req.country, req.preset)
     except ValueError as e:
         raise HTTPException(400, str(e))
 
@@ -129,6 +125,15 @@ async def revalidate_static(request, call_next):
 app.mount("/static", StaticFiles(directory=ROOT / "static"), name="static")
 
 
+def _versioned(match):
+    """/static/app.js -> /static/app.js?v=<last change>, so a browser can never run an old cached copy."""
+    path = match.group(2)
+    f = ROOT / path.lstrip("/")
+    return f'{match.group(1)}="{path}?v={int(f.stat().st_mtime)}"' if f.is_file() else match.group(0)
+
+
 @app.get("/")
 def index():
-    return FileResponse(ROOT / "static" / "index.html")
+    html = (ROOT / "static" / "index.html").read_text(encoding="utf-8")
+    html = re.sub(r'(src|href)="(/static/[\w./-]+\.(?:js|css))"', _versioned, html)
+    return HTMLResponse(html, headers={"Cache-Control": "no-cache"})

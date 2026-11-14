@@ -22,6 +22,8 @@
     const small = parseFloat(getComputedStyle(brand).fontSize);
     // Start point is where the slot sits at the very top of the page, held fixed on screen,
     // so the wordmark glides on one straight path instead of scrolling away first.
+    const org = document.getElementById("org")?.getBoundingClientRect();
+    if (org && org.width) home.style.setProperty("--org-x", `${(org.left + org.width / 2).toFixed(1)}px`);
     const a = slot.getBoundingClientRect();
     const w = logo.offsetWidth, h = logo.offsetHeight;
     m = { w, h, ratio: small / big, x0: a.left + (a.width - w) / 2, y0: a.top + scrollY + (a.height - h) / 2 };
@@ -61,6 +63,9 @@
   addEventListener("scroll", schedule, { passive: true });
   addEventListener("resize", () => { m = null; schedule(); });
   document.fonts?.ready.then(() => { m = null; schedule(); });
+  // the council name arrives after /api/schema loads; re-aim the demo-note arrow when it does
+  const orgEl = document.getElementById("org");
+  if (orgEl && "ResizeObserver" in window) new ResizeObserver(() => { m = null; schedule(); }).observe(orgEl);
   document.addEventListener("viewchange", (e) => setActive(e.detail === "home"));
   setActive(!home.hidden);
 
