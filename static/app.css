@@ -148,8 +148,18 @@ details.full pre { white-space: pre-wrap; font: 12px/1.55 var(--sans); max-heigh
 .empty { padding: 28px; color: var(--muted); font-size: 13px; }
 
 /* home */
-.home { min-height: calc(100vh - 56px); display: flex; align-items: center; justify-content: center; padding: 64px 24px; }
-.home-inner { max-width: 640px; width: 100%; display: flex; flex-direction: column; gap: 24px; }
+/* The map art fills the left ~47% of the image, so the copy sits in the open right side. */
+.home { min-height: calc(100vh - 56px); display: flex; align-items: center; justify-content: flex-start; padding: 64px 6vw 64px 54%;
+  --home-scrim: linear-gradient(90deg, rgba(248, 250, 252, 0) 42%, rgba(248, 250, 252, .38) 100%);
+  --home-img: url("img/home-bg-light.jpg");
+  background: var(--home-scrim), var(--home-img) 35% center / cover no-repeat, var(--bg);
+  /* the light image's open side is mid-blue, so darken the secondary tones for contrast */
+  --text: #0B1726; --text-2: #13243A; --muted: #2A3E54; --faint: #3E5670; --border: rgba(15, 23, 42, .16); }
+:root[data-theme="dark"] .home {
+  --home-scrim: linear-gradient(90deg, rgba(14, 17, 22, 0) 45%, rgba(14, 17, 22, .25) 100%);
+  --home-img: url("img/home-bg-dark.jpg");
+  --text: #E6E8EB; --text-2: #D4D8DE; --muted: #9AA4B0; --faint: #7D8794; --border: rgba(230, 232, 235, .14); }
+.home-inner { max-width: 560px; width: 100%; display: flex; flex-direction: column; gap: 24px; }
 .eyebrow { margin: 0; font: 500 11px var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
 .home h1 { margin: 0; font: 400 40px/1.15 var(--serif); letter-spacing: -.01em; color: var(--text); text-wrap: balance; }
 .lede { margin: 0; font: 17px/1.6 var(--serif); color: var(--text-2); }
@@ -229,6 +239,12 @@ details.full pre { white-space: pre-wrap; font: 12px/1.55 var(--sans); max-heigh
 @media (max-width: 1100px) {
   .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .workspace, .map-layout { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 1000px) {
+  /* no free side left: centre the copy and wash the map back behind it */
+  .home { justify-content: center; padding: 64px 24px;
+    --home-scrim: linear-gradient(rgba(248, 250, 252, .8), rgba(248, 250, 252, .72)); background-position: 0 0, left center, 0 0; }
+  :root[data-theme="dark"] .home { --home-scrim: linear-gradient(rgba(14, 17, 22, .78), rgba(14, 17, 22, .7)); }
 }
 @media (max-width: 900px) {
   .topbar { height: auto; flex-wrap: wrap; padding: 0 16px; row-gap: 0; }
