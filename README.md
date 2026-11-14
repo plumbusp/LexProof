@@ -29,13 +29,19 @@ Tests: `.venv\Scripts\python -m pytest -q`
 
 ## Regional Abuse Map (saved data, no live calls)
 
-The map page only reads local files in `data/threatmap/` (gitignored). Picking another month range, layer or type just filters them.
+The map never calls Exa or Gemini. Picking another month range, layer or type just filters saved data.
+The raw files in `data/threatmap/` stay on your PC (gitignored: paid data and full article excerpts).
+A deploy only has `mapdata/snapshot.json` (committed: events with a short quote, title and link, plus the months searched).
+The server uses the raw files when they exist, otherwise the snapshot.
 
 ```
-Exa (once, costs credits)   python -m app.threatmap --run countries --month 2026-10   -> exa_results.jsonl
-Gemini (once, resumable)    python -m app.threatextract --run                         -> extractions.jsonl
+Exa (once, costs credits)   python -m app.threatmap --run countries --month 2026-10   -> data/threatmap/exa_results.jsonl
+Gemini (once, resumable)    python -m app.threatextract --run                         -> data/threatmap/extractions.jsonl
+snapshot for deploys        python -m app.threatstore --export                        -> mapdata/snapshot.json (commit it)
 map                         GET /api/threatmap?layer=hostile&from=2026-04&to=2026-10&types=T3,T5
 ```
+
+After new Exa or Gemini runs, re-export and commit the snapshot, or the deployed map keeps showing the old data.
 
 Code sets every evidence level (`app/threatmap.py`); Gemini only fills fields, and an event is kept only if its quote
 is really in the saved article text. The event types are a working reading of the plan (T3, T5, T6); T1, T2, T4 are unused

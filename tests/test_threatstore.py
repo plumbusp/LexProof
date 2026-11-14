@@ -109,6 +109,25 @@ def test_events_without_a_matching_article_or_with_old_prompt_rows_are_ignored(s
     assert [e["url"] for e in ts.events()] == [A]
 
 
+def test_deploy_without_raw_files_serves_the_snapshot_identically(store):
+    seed(store)
+    before = ts.query("2026-09", "2026-10")
+    snap = ts.export()
+    text = ts.SNAPSHOT.read_text(encoding="utf-8")
+    assert "highlights" not in text and "An excerpt." not in text        # full article excerpts never leave the PC
+    assert len(snap["events"]) == 3
+    ts.EXTRACTIONS.unlink()
+    ts.SNAPSHOT.parent.joinpath("exa_results.jsonl").unlink()            # what a deploy looks like: no raw data
+    for f in (ts._results_index, ts._extracted_count, ts._cached):
+        f.cache_clear()
+    assert ts.query("2026-09", "2026-10") == before
+    assert ts.months_available() == ["2026-09", "2026-10"]
+
+
+def test_no_raw_files_and_no_snapshot_is_empty_not_a_crash(store):
+    assert ts.months_available() == [] and ts.events() == [] and ts.saved_at() == ""
+
+
 def test_empty_store_and_half_written_last_line(store):
     assert ts.months_available() == [] and ts.events() == []
     store.exa(exa_row("Italy", "2026-10", [art(A)]))

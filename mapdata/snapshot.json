@@ -1,0 +1,562 @@
+{
+"saved_at": "2026-11-14",
+"articles": 2714,
+"extracted": 50,
+"coverage": {
+"Austria": [
+"2026-04",
+"2026-05",
+"2026-06",
+"2026-07",
+"2026-08",
+"2026-09",
+"2026-10"
+],
+"Belgium": [
+"2026-04",
+"2026-05",
+"2026-06",
+"2026-07",
+"2026-08",
+"2026-09",
+"2026-10"
+],
+"Bulgaria": [
+"2026-04",
+"2026-05",
+"2026-06",
+"2026-07",
+"2026-08",
+"2026-09",
+"2026-10"
+],
+"Croatia": [
+"2026-04",
+"2026-05",
+"2026-06",
+"2026-07",
+"2026-08",
+"2026-09",
+"2026-10"
+],
+"Cyprus": [
+"2026-04",
+"2026-05",
+"2026-06",
+"2026-07",
+"2026-08",
+"2026-09",
+"2026-10"
+],
+"Czechia": [
+"2026-04",
+"2026-05",
+"2026-06",
+"2026-07",
+"2026-08",
+"2026-09",
+"2026-10"
+],
+"Denmark": [
+"2026-04",
+"2026-05",
+"2026-06",
+"2026-07",
+"2026-08",
+"2026-09",
+"2026-10"
+],
+"Estonia": [
+"2026-04",
+"2026-05",
+"2026-06",
+"2026-07",
+"2026-08",
+"2026-09",
+"2026-10"
+],
+"Finland": [
+"2026-04",
+"2026-05",
+"2026-06",
+"2026-07",
+"2026-08",
+"2026-09",
+"2026-10"
+],
+"France": [
+"2026-04",
+"2026-05",
+"2026-06",
+"2026-07",
+"2026-08",
+"2026-09",
+"2026-10"
+],
+"Germany": [
+"2026-04",
+"2026-05",
+"2026-06",
+"2026-07",
+"2026-08",
+"2026-09",
+"2026-10"
+],
+"Greece": [
+"2026-04",
+"2026-05",
+"2026-06",
+"2026-07",
+"2026-08",
+"2026-09",
+"2026-10"
+],
+"Hungary": [
+"2026-04",
+"2026-05",
+"2026-06",
+"2026-07",
+"2026-08",
+"2026-09",
+"2026-10"
+],
+"Ireland": [
+"2026-04",
+"2026-05",
+"2026-06",
+"2026-07",
+"2026-08",
+"2026-09",
+"2026-10"
+],
+"Italy": [
+"2026-04",
+"2026-05",
+"2026-06",
+"2026-07",
+"2026-08",
+"2026-09",
+"2026-10"
+],
+"Latvia": [
+"2026-04",
+"2026-05",
+"2026-06",
+"2026-07",
+"2026-08",
+"2026-09",
+"2026-10"
+],
+"Lithuania": [
+"2026-04",
+"2026-05",
+"2026-06",
+"2026-07",
+"2026-08",
+"2026-09",
+"2026-10"
+],
+"Luxembourg": [
+"2026-04",
+"2026-05",
+"2026-06",
+"2026-07",
+"2026-08",
+"2026-09",
+"2026-10"
+],
+"Malta": [
+"2026-04",
+"2026-05",
+"2026-06",
+"2026-07",
+"2026-08",
+"2026-09",
+"2026-10"
+],
+"Netherlands": [
+"2026-04",
+"2026-05",
+"2026-06",
+"2026-07",
+"2026-08",
+"2026-09",
+"2026-10"
+],
+"Poland": [
+"2026-04",
+"2026-05",
+"2026-06",
+"2026-07",
+"2026-08",
+"2026-09",
+"2026-10"
+],
+"Portugal": [
+"2026-04",
+"2026-05",
+"2026-06",
+"2026-07",
+"2026-08",
+"2026-09",
+"2026-10"
+],
+"Romania": [
+"2026-04",
+"2026-05",
+"2026-06",
+"2026-07",
+"2026-08",
+"2026-09",
+"2026-10"
+],
+"Slovakia": [
+"2026-04",
+"2026-05",
+"2026-06",
+"2026-07",
+"2026-08",
+"2026-09",
+"2026-10"
+],
+"Slovenia": [
+"2026-04",
+"2026-05",
+"2026-06",
+"2026-07",
+"2026-08",
+"2026-09",
+"2026-10"
+],
+"Spain": [
+"2026-04",
+"2026-05",
+"2026-06",
+"2026-07",
+"2026-08",
+"2026-09",
+"2026-10"
+],
+"Sweden": [
+"2026-04",
+"2026-05",
+"2026-06",
+"2026-07",
+"2026-08",
+"2026-09",
+"2026-10"
+],
+"Switzerland": [
+"2026-04",
+"2026-05",
+"2026-06",
+"2026-07",
+"2026-08",
+"2026-09",
+"2026-10"
+],
+"United Kingdom": [
+"2026-04",
+"2026-05",
+"2026-06",
+"2026-07",
+"2026-08",
+"2026-09",
+"2026-10"
+]
+},
+"events": [
+{
+"layer": "precursor",
+"type": "AI",
+"date_start": "2026-10-30",
+"target": "civil service",
+"volume": "84 cases across 11",
+"voice": "nobody",
+"attribution": "none",
+"ai_use": "yes",
+"kind": "warning",
+"weak_source": false,
+"quote": "citizens using AI agents to file formal complaints could trigger an 'agentic flood'",
+"countries": [
+"Netherlands"
+],
+"country": "Netherlands",
+"url": "https://aecradar.app/articles/agent-1e329c4a-d240-4884-ab20-0c6bcec734ec/en",
+"title": "Netherlands Plans to Cut 25,000 Civil Service Jobs with AI; Experts Warn of Increased Caseloads · 台灣 AI x AEC 情報",
+"published": "2026-10-30",
+"domain": "aecradar.app",
+"id": "56e51f2bdd"
+},
+{
+"layer": "hostile",
+"type": "T5",
+"date_start": "2026-10-21",
+"target": "scuole",
+"volume": "Una cinquantina di istituti",
+"voice": "official",
+"attribution": "none",
+"ai_use": "unknown",
+"kind": "incident",
+"weak_source": false,
+"quote": "Una cinquantina di istituti in tutta Italia ha ricevuto la stessa email anonima con riferimenti alla Sharia, come confermato dalle verifiche nazionali di ieri.",
+"countries": [
+"Italy"
+],
+"country": "Italy",
+"url": "https://abruzzolive.it/falso-allarme-bomba-a-chieti-gruppo-lega-problema-vero-di-comunicazione/",
+"title": "Falso allarme bomba a Chieti, Gruppo Lega: problema vero di comunicazione - AbruzzoLive",
+"published": "2026-10-21",
+"domain": "abruzzolive.it",
+"id": "3b3e351cad"
+},
+{
+"layer": "precursor",
+"type": "AI",
+"date_start": "2026-10-20",
+"target": "social courts",
+"volume": "Anstieg dringlicher Verfahren um 55 Prozent",
+"voice": "nobody",
+"attribution": "none",
+"ai_use": "yes",
+"kind": "incident",
+"weak_source": false,
+"quote": "Einige Sozialgerichte in Deutschland führen einen Anstieg dringlicher Verfahren um 55 Prozent innerhalb eines Jahres zu einem großen Teil auf KI-generierte Schriftsätze zurück.",
+"countries": [
+"Germany"
+],
+"country": "Germany",
+"url": "https://background.tagesspiegel.de/digitalisierung-und-ki/briefing/mit-ki-gegen-die-ki-flut",
+"title": "Agentic Flooding: Mit KI gegen die KI-Flut?  - Tagesspiegel Background",
+"published": "2026-10-20",
+"domain": "background.tagesspiegel.de",
+"id": "4065fd966a"
+},
+{
+"layer": "precursor",
+"type": "AI",
+"date_start": "2026-10-17",
+"target": "courts",
+"volume": "surge",
+"voice": "nobody",
+"attribution": "none",
+"ai_use": "yes",
+"kind": "incident",
+"weak_source": false,
+"quote": "Swiss Courts Report a Surge of Lengthy ChatGPT-Written Submissions From Litigants",
+"countries": [
+"Switzerland"
+],
+"country": "Switzerland",
+"url": "https://ai4switzerland.com/news/swiss-courts-report-surge-of-lengthy-chatgpt-written-submissions-from-litigants/",
+"title": "Swiss Courts Report a Surge of Lengthy ChatGPT-Written Submissions From Litigants | AI4Switzerland",
+"published": "2026-10-17",
+"domain": "ai4switzerland.com",
+"id": "823233fe7c"
+},
+{
+"layer": "hostile",
+"type": "T3",
+"date_start": "2026-09-27",
+"target": "Prime Minister",
+"volume": "thousands",
+"voice": "nobody",
+"attribution": "none",
+"ai_use": "unknown",
+"kind": "incident",
+"weak_source": false,
+"quote": "when two thousand letters come in on one topic demanding that the Ministry of the Environment be taken away from Motoristé, there simply aren't enough human hours in the day to answer them all",
+"countries": [
+"Czechia"
+],
+"country": "Czechia",
+"url": "https://aroundprague.cz/en/news/babi-complains-of-flood-of-letters-demanding-environment-ministry-be-taken-from",
+"title": "Babiš complains of flood of letters demanding environment ministry be taken from Motoristé",
+"published": "2026-09-27",
+"domain": "aroundprague.cz",
+"id": "49ff1a1a82"
+},
+{
+"layer": "precursor",
+"type": "AI",
+"date_start": "2026-09-22",
+"target": "data protection supervisory authorities",
+"volume": "significant increase",
+"voice": "nobody",
+"attribution": "none",
+"ai_use": "yes",
+"kind": "incident",
+"weak_source": false,
+"quote": "Artificial intelligence is increasingly being used in the preparation of complaints and requests, which can be resource-intensive.",
+"countries": [
+"Estonia",
+"Latvia",
+"Lithuania"
+],
+"country": "Estonia",
+"url": "https://365trust.me/autorita-di-controllo-lituana-le-autorita-baltiche-di-controllo-sulla-protezione-dei-dati-si-riuniscono-a-tallinn-per-discutere-delle-sfide-comuni/",
+"title": "LITHUANIAN SUPERVISORY AUTHORITY: The Baltic data protection supervisory authorities are meeting in Tallinn to discuss common challenges. - 365TRUST.ME",
+"published": "2026-09-28",
+"domain": "365trust.me",
+"id": "a3a366409f"
+},
+{
+"layer": "precursor",
+"type": "AI",
+"date_start": "2026-09-22",
+"target": "data protection supervisory authorities",
+"volume": "significant increase",
+"voice": "nobody",
+"attribution": "none",
+"ai_use": "yes",
+"kind": "incident",
+"weak_source": false,
+"quote": "Artificial intelligence is increasingly being used in the preparation of complaints and requests, which can be resource-intensive.",
+"countries": [
+"Estonia",
+"Latvia",
+"Lithuania"
+],
+"country": "Latvia",
+"url": "https://365trust.me/autorita-di-controllo-lituana-le-autorita-baltiche-di-controllo-sulla-protezione-dei-dati-si-riuniscono-a-tallinn-per-discutere-delle-sfide-comuni/",
+"title": "LITHUANIAN SUPERVISORY AUTHORITY: The Baltic data protection supervisory authorities are meeting in Tallinn to discuss common challenges. - 365TRUST.ME",
+"published": "2026-09-28",
+"domain": "365trust.me",
+"id": "391ead52f4"
+},
+{
+"layer": "precursor",
+"type": "AI",
+"date_start": "2026-09-22",
+"target": "data protection supervisory authorities",
+"volume": "significant increase",
+"voice": "nobody",
+"attribution": "none",
+"ai_use": "yes",
+"kind": "incident",
+"weak_source": false,
+"quote": "Artificial intelligence is increasingly being used in the preparation of complaints and requests, which can be resource-intensive.",
+"countries": [
+"Estonia",
+"Latvia",
+"Lithuania"
+],
+"country": "Lithuania",
+"url": "https://365trust.me/autorita-di-controllo-lituana-le-autorita-baltiche-di-controllo-sulla-protezione-dei-dati-si-riuniscono-a-tallinn-per-discutere-delle-sfide-comuni/",
+"title": "LITHUANIAN SUPERVISORY AUTHORITY: The Baltic data protection supervisory authorities are meeting in Tallinn to discuss common challenges. - 365TRUST.ME",
+"published": "2026-09-28",
+"domain": "365trust.me",
+"id": "e2295d3b45"
+},
+{
+"layer": "hostile",
+"type": "T5",
+"date_start": "2026-08-27",
+"target": "prosecutor's offices in Sofia region",
+"volume": "7 prosecutor's offices",
+"voice": "official",
+"attribution": "none",
+"ai_use": "unknown",
+"kind": "incident",
+"weak_source": false,
+"quote": "В седем прокуратури от Софийска област са получени заплашителни имейли, съобщиха от полицията",
+"countries": [
+"Bulgaria"
+],
+"country": "Bulgaria",
+"url": "http://nrd.bg/24/24484423",
+"title": "В седем прокуратури от Софийска област са получени заплашителни имейли, съобщиха от полицията - NRD24",
+"published": "2026-08-27",
+"domain": "nrd.bg",
+"id": "6371f010ff"
+},
+{
+"layer": "hostile",
+"type": "T6",
+"date_start": "2026-05-15",
+"target": "media journalists and emergency services",
+"volume": "masowym wysyłaniu fałszywych zgłoszeń",
+"voice": "official",
+"attribution": "none",
+"ai_use": "unknown",
+"kind": "incident",
+"weak_source": false,
+"quote": "w sprawie zorganizowanego nękania dziennikarzy Telewizji Republika i mediów Strefy Wolnego Słowa poprzez fałszywe alarmy i inne metody",
+"countries": [
+"Poland"
+],
+"country": "Poland",
+"url": "https://atlaspolityczny.pl/interpelacja/17188",
+"title": "Interpelacja w sprawie systematycznego nękania i terroryzowania pracowników Telewizji… (nr 17188) | Atlas Polityczny",
+"published": "2026-05-15",
+"domain": "atlaspolityczny.pl",
+"id": "bbd13f391d"
+},
+{
+"layer": "precursor",
+"type": "AI",
+"date_start": "2026-04-24",
+"target": "media house",
+"volume": "kaks kolmandikku meediamajale saadetud tekstidest",
+"voice": "nobody",
+"attribution": "none",
+"ai_use": "yes",
+"kind": "incident",
+"weak_source": false,
+"quote": "kaks kolmandikku meediamajale saadetud tekstidest kirjutatud mõnd tehisarurakendust kasutades",
+"countries": [
+"Estonia"
+],
+"country": "Estonia",
+"url": "https://arvamus.delfi.ee/artikkel/120570470/eesti-arvamusliidrid-on-valinud-ajumada-kuidas-tehisaru-eestikeelset-motet-solgib",
+"title": "Eesti arvamusliidrid on valinud ajumäda. Enamik arvamuslugudest on kirjutatud masina abil - Arvamus",
+"published": "2026-04-24",
+"domain": "arvamus.delfi.ee",
+"id": "c224671b93"
+},
+{
+"layer": "precursor",
+"type": "AI",
+"date_start": "2026-04-13",
+"target": "European regulators",
+"volume": "54% more complaints",
+"voice": "nobody",
+"attribution": "none",
+"ai_use": "yes",
+"kind": "incident",
+"weak_source": false,
+"quote": "Vse več državljanov namreč uporablja orodja umetne inteligence za pripravo pritožb, predlogov in drugih vlog, kar povzroča občuten pritisk na evropske regulatorje.",
+"countries": [
+"Belgium"
+],
+"country": "Belgium",
+"url": "https://1zavse.si/2026-04-13/regional/umetna-inteligenca-preobremenjuje-eu-v-bruslju-se-utapljajo-v-vlogah-in-pritozbah/1197318",
+"title": "UMETNA INTELIGENCA PREOBREMENJUJE EU: V Bruslju se utapljajo v vlogah in pritožbah - 1zaVse",
+"published": "2026-04-13",
+"domain": "1zavse.si",
+"id": "56979a87cf"
+},
+{
+"layer": "hostile",
+"type": "T5",
+"date_start": "2025-01-28",
+"target": "educational institutions",
+"volume": "over hele landet",
+"voice": "official",
+"attribution": "none",
+"ai_use": "unknown",
+"kind": "incident",
+"weak_source": false,
+"quote": "Uddannelsessteder over hele landet har modtaget bombetrusler",
+"countries": [
+"Denmark"
+],
+"country": "Denmark",
+"url": "https://avisendanmark.dk/krimi/skoler-over-hele-landet-har-modtaget-truende-mails",
+"title": "\"Sprængstof på skolen\": Uddannelsessteder over hele landet har modtaget bombetrusler | avisendanmark.dk",
+"published": "2026-06-21",
+"domain": "avisendanmark.dk",
+"id": "bd04babfb4"
+}
+]
+}
