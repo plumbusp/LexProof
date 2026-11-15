@@ -208,9 +208,12 @@
     <p class="lede">How much each <b class="hl-threat">threat flood</b> (mass threat emails, coordinated complaint campaigns)
       and each <b class="hl-complaint">complaint flood</b> (people sending long AI-written complaints and requests) reported in Europe
       matters to <b class="hl-uk">UK councils, schools, the NHS and ombudsmen</b>.</p>
-    <p class="lede">Every report gets <b>one level from 1 to 5</b>. <b class="hl-uk">5 · Act now</b> means it is hitting UK services now. Reports older than 90 days drop one level.
-      Opened for another country, the same news would score differently.</p>
-    <p class="fine">Demo: news saved up to 14 Nov 2026, found and summarised with Exa. In production it updates every day.</p>
+    <ul class="map-how" aria-label="How it works">
+      <li><b>Fetch.</b> <b class="hl-exa">Exa</b> searches the live web for these floods in each country's own language, reads every article and checks each quote on the real page.</li>
+      <li><b>Filter.</b> An <b class="hl-exa">Exa Agent</b> (AI) checks every report against the client, here <b class="hl-uk">UK public bodies</b>. Fixed rules turn its findings into a level from 1 to 5.</li>
+      <li><b>Show.</b> One map of Europe for the client. <b class="hl-uk">5 · Act now</b> means it is hitting UK services now; older than 90 days drops one level.</li>
+    </ul>
+    <p class="fine">Demo: news saved up to 14 Nov 2026. In production it updates every day. Another client country sees different levels.</p>
   </header>
 
   <div class="map-controls">

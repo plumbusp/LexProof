@@ -370,11 +370,11 @@ body[data-view="home"] .topbar { background: color-mix(in srgb, var(--panel) 70%
 .ev-tags { display: flex; flex-wrap: wrap; gap: 4px; }
 .tag { padding: 1px 6px; font-size: 10px; color: var(--muted); border: 1px solid var(--border-strong); background: var(--subtle); }
 :root { --r1: #F1E7E2; --r2: #F6C3A8; --r3: #EC8A5C; --r4: #CF4F25; --r5: #8F2A12;
-  --hl-threat: #B4421C; --hl-complaint: #2A5BA8; --hl-uk: #6B2FA3; }
+  --hl-threat: #B4421C; --hl-complaint: #2A5BA8; --hl-uk: #6B2FA3; --hl-exa: #0F766E; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --r1: #2E2623; --r2: #5E3424; --r3: #9C4528; --r4: #D9643A; --r5: #F49A73;
-  --hl-threat: #F08A62; --hl-complaint: #8DB8F0; --hl-uk: #C9A2F0; } }
+  --hl-threat: #F08A62; --hl-complaint: #8DB8F0; --hl-uk: #C9A2F0; --hl-exa: #5EEAD4; } }
 :root[data-theme="dark"] { --r1: #2E2623; --r2: #5E3424; --r3: #9C4528; --r4: #D9643A; --r5: #F49A73;
-  --hl-threat: #F08A62; --hl-complaint: #8DB8F0; --hl-uk: #C9A2F0; }
+  --hl-threat: #F08A62; --hl-complaint: #8DB8F0; --hl-uk: #C9A2F0; --hl-exa: #5EEAD4; }
 .country.r0 { fill: url(#hatch); }
 .country.r1 { fill: var(--r1); } .country.r2 { fill: var(--r2); } .country.r3 { fill: var(--r3); } .country.r4 { fill: var(--r4); } .country.r5 { fill: var(--r5); }
 .sw.r1 { background: var(--r1); } .sw.r2 { background: var(--r2); } .sw.r3 { background: var(--r3); } .sw.r4 { background: var(--r4); } .sw.r5 { background: var(--r5); }
@@ -388,6 +388,11 @@ body[data-view="home"] .topbar { background: color-mix(in srgb, var(--panel) 70%
 .map-title { margin: 0; font: 400 32px/1.15 var(--serif); letter-spacing: -.01em; color: var(--text); text-wrap: balance; }
 .map-hero .lede { font-size: 16px; }
 .map-hero .fine { margin: 0; }
+.hl-exa { color: var(--hl-exa); }
+.map-how { margin: 2px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; font: 15px/1.5 var(--serif); color: var(--text-2); }
+.map-how li { position: relative; padding-left: 18px; }
+.map-how li::before { content: ""; position: absolute; left: 2px; top: .62em; width: 6px; height: 6px; background: var(--text); }
+.map-how li > b:first-child { font-family: var(--sans); font-size: 13px; letter-spacing: .01em; color: var(--text); }
 .hl-threat { color: var(--hl-threat); } .hl-complaint { color: var(--hl-complaint); } .hl-uk { color: var(--hl-uk); }
 .rel-chip { padding: 1px 6px; font: 600 10px var(--mono); color: var(--text); border: 1px solid var(--border-strong); }
 .rel-chip.r4, .rel-chip.r5 { color: #fff; border-color: transparent; } .rel-chip.r5 { background: var(--r5); } .rel-chip.r4 { background: var(--r4); }
