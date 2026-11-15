@@ -1,5 +1,7 @@
-// Regional Abuse Map, UK view. Reads /api/threatmap?layer=relevance, which serves saved data only (no live fetching).
+// Regional Abuse Map, UK view. Reads /api/threatmap?layer=relevance, which serves saved data (no Exa call).
 // Changing the layer, the month range or the type chips just asks the server for another slice.
+// Two buttons ask Exa live (budget-capped, server side): "Check the last 24 hours" and "Ask Exa about <country> now".
+// New reports go into the same saved data; if Exa fails the server replays its newest real saved check, labelled.
 (() => {
   // Geographic Europe in the data (42 countries) by ISO 3166 numeric id (as in world-atlas).
   // Same list as app/threatmap.py SCOPE (plan rule 4).
@@ -55,6 +57,9 @@
   let layer = "relevance", frm = null, to = null, types = null; // types: null = all, [] = none
   let data = null, selected = null, seq = 0, showAll = false, centroids = {};
   let firstLoad = true;
+  let live = null;                         // /api/threatmap/live: last check, spend today, cap
+  const jobs = { refresh: null, investigate: null }; // {country, lines: [[icon, html, cls]], status}
+  const newIds = new Set();                // reports a live check just added (also flagged e.new by the server)
   const original = new Set(); // ids of events whose quote is shown in its original language
   const langName = (c) => { try { return new Intl.DisplayNames(["en"], { type: "language" }).of(c); } catch { return c; } };
 
@@ -193,6 +198,7 @@
       if (!at || !c.events.length) continue;
       if (n) g.append(marker("circle", at[0], at[1], n));
       if (media) g.append(marker("diamond", at[0] + (n ? 16 : 0), at[1] + (n ? 6 : 0), media));
+      if (c.events.some(isNew)) g.append(newMark(at[0], at[1]));
     }
     const span = data.from === data.to ? monthName(data.from) : `${monthName(data.from)} to ${monthName(data.to)}`;
     const sites = data.sites ? ` from ${data.sites} news site${data.sites === 1 ? "" : "s"}` : "";
@@ -200,6 +206,24 @@
     $("#map-foot").textContent = `Exa searches the web for these reports${data.saved_at ? `; last run ${dayName(data.saved_at)}` : ""}. AI gives facts. Fixed rules set the level. Reported or warned, not a proven attack.`;
     renderTiers();
     renderSide();
+  }
+
+  const isNew = (e) => e.new || newIds.has(e.id);
+
+  // A ring that pulses a few times and a small "NEW" label next to the dot.
+  function newMark(x, y) {
+    const g = document.createElementNS(NS, "g");
+    const ring = document.createElementNS(NS, "circle");
+    ring.setAttribute("cx", x); ring.setAttribute("cy", y); ring.setAttribute("r", 12); ring.setAttribute("class", "new-ring");
+    const b = document.createElementNS(NS, "g");
+    b.setAttribute("class", "new-badge");
+    const r = document.createElementNS(NS, "rect");
+    r.setAttribute("x", x + 8); r.setAttribute("y", y - 21); r.setAttribute("width", 24); r.setAttribute("height", 11);
+    const t = document.createElementNS(NS, "text");
+    t.setAttribute("x", x + 20); t.setAttribute("y", y - 13); t.setAttribute("text-anchor", "middle"); t.textContent = "NEW";
+    b.append(r, t);
+    g.append(ring, b);
+    return g;
   }
 
   function marker(kind, x, y, n) {
@@ -259,8 +283,8 @@
     const agent = fx.note && e.country !== "United Kingdom"
       ? `<div class="ev-agent fine"><b>Exa Agent:</b> ${esc(fx.note)}${fx.evidence_url ? ` <a href="${esc(fx.evidence_url)}" target="_blank" rel="noopener noreferrer">UK source<span class="icon">open_in_new</span></a>` : ""}</div>` : "";
     return `<article class="ev">
-      <div class="ev-top"><span class="ev-date">${esc(dayName(e.date_start))}</span><span class="rel-chip r${r}" title="${esc(REL[r].why)}">Level ${r} · ${esc(REL[r].name)}</span><span class="tag kind-${kind}">${esc(TYPE_NAMES[e.type] || e.type)}</span>${layer === "relevance" && !selected ? `<span class="tag">${esc(e.country)}</span>` : ""}</div>
-      <h3 class="ev-head"${e.headline ? ` title="Headline written by AI from the article"` : ""}>${esc(headline)}</h3>
+      <div class="ev-top"><span class="ev-date">${esc(dayName(e.date_start))}</span><span class="rel-chip r${r}" title="${esc(REL[r].why)}">Level ${r} · ${esc(REL[r].name)}</span><span class="tag kind-${kind}">${esc(TYPE_NAMES[e.type] || e.type)}</span>${layer === "relevance" && !selected ? `<span class="tag">${esc(e.country)}</span>` : ""}${isNew(e) ? `<span class="tag new-tag" title="Found by a live Exa check in the last 24 hours">New</span>` : ""}</div>
+      <h3 class="ev-head"${e.headline ? ` title="${e.headline_by === "exa" ? "Headline by Exa from the article" : "Headline written by AI from the article"}"` : ""}>${esc(headline)}</h3>
       ${e.summary ? `<p class="ev-sum">${esc(e.summary)} <span class="fine">Summary by Exa</span></p>` : ""}
       <div class="ev-tags">${(e.rel_why || []).map((l) => `<span class="tag">${esc(l)}</span>`).join("")}</div>
       ${agent}
@@ -268,12 +292,13 @@
     </article>`;
   }
 
-  // English by default when Gemini translated it; the original (the text the quote check ran on) is one click away.
+  // English by default when a translation exists; the original (the text the quote check ran on) is one click away.
+  const TR_BY = { exa: "Exa", claude: "Claude", gemini: "Gemini" };
   function quoteBlock(e) {
     if (!e.quote_en) return `<blockquote>“${esc(e.quote)}”</blockquote>`;
     const orig = original.has(e.id), lang = langName(e.lang || "");
     return `<blockquote${orig ? ` lang="${esc(e.lang || "")}"` : ""}>“${esc(orig ? e.quote : e.quote_en)}”</blockquote>
-      <div class="ev-tr fine">${orig ? `Original, ${esc(lang)}` : `Translated from ${esc(lang)} by ${e.tr_by === "claude" ? "Claude" : "Gemini"}`}
+      <div class="ev-tr fine">${orig ? `Original, ${esc(lang)}` : `Translated from ${esc(lang)} by ${TR_BY[e.tr_by] || "Gemini"}`}
         <button type="button" class="linkish" data-orig="${esc(e.id)}" aria-pressed="${orig}">${orig ? "Show English" : "Show original"}</button></div>`;
   }
 
@@ -304,7 +329,8 @@
       return;
     }
     const c = data.countries[selected], evs = c.events, shown = showAll ? evs : evs.slice(0, 8);
-    side.innerHTML = `<div class="section-head"><div><button type="button" class="linkish back" id="map-back">← Back to what matters for the UK</button><h2>${esc(selected)}</h2><div class="section-sub">${esc(countryText(selected, c))}</div></div></div>
+    side.innerHTML = `<div class="section-head"><div><button type="button" class="linkish back" id="map-back">← Back to what matters for the UK</button><h2>${esc(selected)}</h2><div class="section-sub">${esc(countryText(selected, c))}</div>${askButton(selected)}</div></div>
+      ${jobs.investigate && jobs.investigate.country === selected ? stepsHtml(jobs.investigate) : ""}
       <div class="ev-list">${evs.length ? shown.map(eventCard).join("") : `<div class="empty">${c.searched ? "No reports with a source and a quote in this window. Nothing found is not the same as safe." : "This country was not searched in this window."}</div>`}</div>
       ${evs.length > shown.length ? `<button class="btn more" type="button" id="more">Show all ${evs.length}</button>` : ""}`;
   }
@@ -314,6 +340,9 @@
     const t = e.target;
     if (t.closest("#more")) { showAll = true; renderSide(); return; }
     if (t.closest("#map-back")) { selected = null; render(); return; }
+    if (t.closest("#live-24h")) { runLive("refresh"); return; }
+    const ask = t.closest("[data-ask]");
+    if (ask) { runLive("investigate", ask.dataset.ask); return; }
     const tr = t.closest("[data-orig]");
     if (tr) { const id = tr.dataset.orig; original.has(id) ? original.delete(id) : original.add(id); renderSide(); return; }
     const seg = t.closest(".seg-btn");
@@ -335,5 +364,137 @@
   $("#map-from").onchange = (e) => { frm = e.target.value; if (to && frm > to) to = frm; load(); };
   $("#map-to").onchange = (e) => { to = e.target.value; if (frm && to < frm) frm = to; load(); };
 
-  document.addEventListener("viewchange", (e) => { if (e.detail === "map") init(); });
+  // ---------- live Exa checks (the two buttons)
+  const clock = (iso) => new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  const usd = (x) => "$" + Number(x || 0).toFixed(3);
+  const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+
+  function askButton(country) {
+    if (live && !live.exa) return "";       // a deploy without an Exa key: no live research button
+    const busy = jobs.investigate && jobs.investigate.status === "running";
+    return `<button type="button" class="btn ask-exa" data-ask="${esc(country)}"${busy ? " disabled" : ""} title="One Exa Agent run on ${esc(country)}: reports from the last 60 days that are not on the map yet. At most $0.05.">
+      <span class="icon">travel_explore</span>Ask Exa about ${esc(country)} now</button>`;
+  }
+
+  // lines hold trusted HTML built below (every outside value is escaped where it is put in)
+  function stepsHtml(job, id) {
+    return `<ol class="live-steps"${id ? ` id="${id}"` : ""} aria-live="polite">${job.lines.map(([icon, html, cls]) =>
+      `<li class="${cls || ""}">${icon === "spin" ? `<span class="spin"></span>` : `<span class="icon">${icon}</span>`}<span>${html}</span></li>`).join("")}</ol>`;
+  }
+
+  function paintJob(kind) {
+    const job = jobs[kind];
+    if (kind === "refresh") {
+      const box = $("#live-steps");
+      if (job) box.outerHTML = stepsHtml(job, "live-steps"); else box.hidden = true;
+      const btn = $("#live-24h");
+      if (btn) btn.disabled = !!job && job.status === "running";
+    } else if (data) {
+      renderSide();
+    }
+  }
+
+  function paintLiveLine() {
+    const el = $("#live-line"), btn = $("#live-24h");
+    if (!live) { el.textContent = ""; return; }
+    if (btn && !live.exa) btn.lastChild.textContent = "Replay last live check";
+    const parts = [live.last_checked ? `Last checked by Exa: <b>${esc(clock(live.last_checked))}</b>` : "Not checked live yet"];
+    if (live.last_checked && live.last_cost_usd != null) parts.push(`this check cost ${esc(usd(live.last_cost_usd))}`);
+    parts.push(`today ${esc(usd(live.spent_today_usd))} of ${esc("$" + Number(live.cap_today_usd).toFixed(2))}`);
+    if (live.new_since_yesterday) parts.push(`${esc(plural(live.new_since_yesterday, "new report", "new reports"))} since yesterday`);
+    el.innerHTML = parts.join(" · ");
+  }
+
+  async function loadLive() {
+    try {
+      const r = await fetch("/api/threatmap/live");
+      if (r.ok) { live = await r.json(); paintLiveLine(); }
+    } catch { /* the line just stays empty */ }
+  }
+
+  // Server progress steps -> plain lines. Only the last line can still be in progress.
+  function lines(kind, country, j) {
+    const out = [], who = kind === "refresh" ? "the last 24 hours" : esc(country);
+    for (const p of j.progress || []) {
+      if (p.step === "asking") out.push(["spin", kind === "refresh" ? `Asking Exa about the last 24 hours, in ${Number(p.languages) || 11} languages…` : `Asking Exa about ${esc(country)}…`]);
+      else if (p.step.startsWith("agent_") && p.step !== "agent_started" && p.seconds != null) {
+        const msg = `Exa Agent is researching ${esc(country)} (${Number(p.seconds)} s)…`;
+        if (out.length && out[out.length - 1][1].startsWith("Exa Agent is researching")) out[out.length - 1][1] = msg; else out.push(["spin", msg]);
+      } else if (p.step === "proposed") out.push(["inbox", `Exa proposed ${plural(Number(p.n), "report", "reports")}.`]);
+      else if (p.step === "checking") out.push(["spin", `Checking each quote on its page… <span class="fine">(${plural(Number(p.n), "new page", "new pages")})</span>`]);
+      else if (p.step === "checked") out.push(["check_circle", `${Number(p.passed)} passed, ${Number(p.dropped)} dropped.`]);
+      else if (p.step === "reused") out.push(["history", `Exa already checked ${who} at ${esc(clock(p.finished_at))}. Showing that check, at no new cost.`]);
+    }
+    return out.map((l, i) => (l[0] === "spin" && (i < out.length - 1 || j.status !== "running") ? ["check", l[1]] : l));
+  }
+
+  function finish(kind, country, j) {
+    const out = lines(kind, country, j), res = j.result || {};
+    const where = kind === "refresh" ? "in the last 24 hours" : `about ${esc(country)} in the last 60 days`;
+    if (j.status === "error") {
+      out.push(["error", esc(j.error || "Exa did not answer properly."), "live-replay"]);
+      return out;
+    }
+    if (j.status === "replay") {
+      out.push(["history", `Replay of a real Exa check from ${esc(clock(res.finished_at))}. ${esc(res.reason || "Exa did not answer in time.")}`, "live-replay"]);
+    } else if (res.reused && kind === "refresh") {
+      const mins = Math.max(0, Math.round((Date.now() - new Date(res.finished_at)) / 60000));
+      out.push(["history", `Exa checked the last 24 hours ${mins ? plural(mins, "minute", "minutes") + " ago" : "just now"}. Showing that check, at no new cost.`]);
+    }
+    const n = Number(res.passed) || 0;
+    const dropped = (res.dropped || []).filter((d) => d.reason !== "already on the map");
+    const known = (res.dropped || []).length - dropped.length;
+    if ((j.status === "replay" || res.reused) && (res.proposed || 0) > 0)
+      out.push(["inbox", `Exa proposed ${plural(Number(res.proposed), "report", "reports")}; ${n} passed the quote check.`]);
+    if (dropped.length || known) {
+      const why = {};
+      for (const d of dropped) why[d.reason] = (why[d.reason] || 0) + 1;
+      if (known) why["already on the map"] = known;
+      out.push(["block", `<span class="fine">Not added: ${Object.entries(why).map(([r, k]) => `${k} × ${esc(r)}`).join(" · ")}</span>`]);
+    }
+    out.push(n
+      ? ["fiber_new", `${plural(n, "new report", "new reports")} ${where}${j.status === "replay" ? "" : ", marked <b>New</b> on the map"}.`, "live-note"]
+      : ["info", `No new reports ${where}. Nothing found is not the same as safe.`, "live-note"]);
+    const cost = j.status === "replay" || res.reused ? 0 : res.cost_usd;
+    out.push(["payments", `<span class="fine">This check cost ${esc(usd(cost))}.</span>`]);
+    return out;
+  }
+
+  async function runLive(kind, country) {
+    if (jobs[kind] && jobs[kind].status === "running") return;
+    const job = (jobs[kind] = { country, status: "running",
+      lines: [["spin", kind === "refresh" ? "Asking Exa about the last 24 hours…" : `Asking Exa about ${esc(country)}…`]] });
+    paintJob(kind);
+    let j;
+    try {
+      const r = await fetch(kind === "refresh" ? "/api/threatmap/refresh" : "/api/threatmap/investigate", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: kind === "refresh" ? "{}" : JSON.stringify({ country }),
+      });
+      if (!r.ok) throw new Error(String(r.status));
+      const { job_id } = await r.json();
+      const t0 = Date.now();
+      for (;;) {
+        const jr = await fetch("/api/jobs/" + job_id);
+        if (!jr.ok) throw new Error(String(jr.status));
+        j = await jr.json();
+        if (j.status !== "running") break;
+        const l = lines(kind, country, j);
+        if (l.length) job.lines = l;
+        paintJob(kind);
+        if (Date.now() - t0 > 200000) throw new Error("timeout");
+        await new Promise((ok) => setTimeout(ok, 1000));
+      }
+    } catch {
+      j = { status: "error", error: "The live check could not reach the server. The map is unchanged.", progress: [] };
+    }
+    job.status = j.status;
+    job.lines = finish(kind, country, j);
+    if (j.status === "done" && j.result) for (const e of j.result.events || []) newIds.add(e.id);
+    paintJob(kind);
+    await loadLive();
+    if (j.status === "done" && j.result && (j.result.events || []).length) await load(); else if (data && kind === "investigate") renderSide();
+  }
+
+  document.addEventListener("viewchange", (e) => { if (e.detail === "map") { init(); loadLive(); } });
 })();

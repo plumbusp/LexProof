@@ -1,0 +1,810 @@
+{
+ "note": "Real Exa deep /search response for the 24 h check (15 Nov 2026); result text removed, highlights trimmed.",
+ "request": {
+  "query": "News that public institutions, schools, courts or media in Europe were flooded with coordinated mass complaints, requests or threat emails",
+  "type": "deep",
+  "category": "news",
+  "numResults": 10,
+  "startPublishedDate": "2026-11-14T02:00:00.000Z",
+  "endPublishedDate": "2026-11-15T03:00:00.000Z",
+  "additionalQueries": [
+   "council or agency flooded with coordinated mass complaints or requests",
+   "Bombendrohungen per E-Mail an Schulen und Gerichte",
+   "administrations submergées par des plaintes ou demandes coordonnées en masse",
+   "fałszywe alarmy bombowe e-mailem do szkół i sądów",
+   "enti pubblici sommersi da segnalazioni o richieste coordinate di massa",
+   "amenazas de bomba por correo electrónico a colegios y juzgados",
+   "overheidsinstanties overspoeld met massale gecoördineerde klachten of verzoeken",
+   "amenințări cu bombă prin e-mail la școli și instanțe",
+   "úřady zahlceny hromadnými koordinovanými stížnostmi nebo žádostmi",
+   "bombhot via mejl till skolor och domstolar"
+  ],
+  "systemPrompt": "You map reports of public institutions or media in Europe being flooded with mass submissions. List one event per article and give the country where it happened. Use only what the article says; never guess. Quotes are copied verbatim in the original language, never translated. Skip opinion pieces, scams aimed at individuals and single complaints.",
+  "outputSchema": {
+   "type": "object",
+   "required": [
+    "events"
+   ],
+   "properties": {
+    "events": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "required": [
+       "url",
+       "quote",
+       "type",
+       "country"
+      ],
+      "properties": {
+       "url": {
+        "type": "string",
+        "description": "URL of the article that reports this event; must be one of the search results"
+       },
+       "date": {
+        "type": "string",
+        "description": "YYYY-MM-DD when it happened, else the article's publication date"
+       },
+       "type": {
+        "type": "string",
+        "enum": [
+         "T3",
+         "T5",
+         "T6",
+         "AI",
+         "none"
+        ],
+        "description": "T3 mass complaints/requests/petitions to public bodies; T5 mass threat or hoax emails to schools, courts, hospitals; T6 flooding of newsrooms, fact-checkers or media regulators; AI rise in complaints written with AI by ordinary people; none otherwise"
+       },
+       "target": {
+        "type": "string",
+        "description": "bodies targeted and the size as written, a few words in English"
+       },
+       "voice": {
+        "type": "string",
+        "enum": [
+         "nobody",
+         "expert",
+         "researchers",
+         "official"
+        ],
+        "description": "who says it is hostile or coordinated: official = named government body, minister, police or security service"
+       },
+       "attribution": {
+        "type": "string",
+        "enum": [
+         "none",
+         "suspected",
+         "named"
+        ],
+        "description": "named = a named state or group is blamed; suspected = suspicion or hypothesis"
+       },
+       "quote": {
+        "type": "string",
+        "description": "ONE sentence copied EXACTLY from the article, original language, under 220 characters"
+       },
+       "country": {
+        "type": "string",
+        "enum": [
+         "Albania",
+         "Andorra",
+         "Austria",
+         "Belgium",
+         "Bosnia and Herzegovina",
+         "Bulgaria",
+         "Croatia",
+         "Cyprus",
+         "Czechia",
+         "Denmark",
+         "Estonia",
+         "Finland",
+         "France",
+         "Germany",
+         "Greece",
+         "Hungary",
+         "Iceland",
+         "Ireland",
+         "Italy",
+         "Latvia",
+         "Liechtenstein",
+         "Lithuania",
+         "Luxembourg",
+         "Malta",
+         "Moldova",
+         "Monaco",
+         "Montenegro",
+         "Netherlands",
+         "North Macedonia",
+         "Norway",
+         "Poland",
+         "Portugal",
+         "Romania",
+         "San Marino",
+         "Serbia",
+         "Slovakia",
+         "Slovenia",
+         "Spain",
+         "Sweden",
+         "Switzerland",
+         "United Kingdom",
+         "Vatican"
+        ],
+        "description": "the country where it happened"
+       }
+      }
+     }
+    }
+   }
+  },
+  "contents": {
+   "highlights": {
+    "query": "News that public institutions, schools, courts or media in Europe were flooded with coordinated mass complaints, requests or threat emails",
+    "maxCharacters": 600
+   }
+  }
+ },
+ "response": {
+  "requestId": "b39f54db2025c5c00bb77d309a331f63",
+  "resolvedSearchType": "",
+  "results": [
+   {
+    "id": "https://www.i24news.tv/en/news/international/europe/artc-how-hoax-bomb-threats-are-disrupting-life-across-europe",
+    "title": "How Hoax Bomb Threats Are Disrupting Life Across Europe - i24NEWS",
+    "url": "https://www.i24news.tv/en/news/international/europe/artc-how-hoax-bomb-threats-are-disrupting-life-across-europe",
+    "publishedDate": "2026-11-14T13:49:34.000Z",
+    "author": "Daniel Shnapp",
+    "highlights": [
+     "The largest incident came on November 11, when an email warning of a “powerful explosive device with a remote trigger” was sent to about 6,300 schools in Italy. Police responded at hundreds of schools, and students and staff were evacuated from 312 of them.\n\n...\n\nBy October 19, schools in Northern I"
+    ],
+    "image": "https://cdn.i24news.tv/uploads/a6/4e/f5/02/82/a2/d5/e6/ef/f1/52/e3/34/e0/57/47/a64ef50282a2d5e6eff152e334e05747.jpg"
+   },
+   {
+    "id": "https://www.lacnews24.it/attualita/allarmi-bomba-nelle-scuole-la-sottosegretaria-savino-in-visita-alla-guardia-di-finanza-di-sibari-litalia-e-sotto-attacco-j1mo9ztz",
+    "title": "Allarmi bomba nelle scuole, la sottosegretaria Savino in visita alla Guardia di Finanza di Sibari: «L’Italia è sotto attacco»",
+    "url": "https://www.lacnews24.it/attualita/allarmi-bomba-nelle-scuole-la-sottosegretaria-savino-in-visita-alla-guardia-di-finanza-di-sibari-litalia-e-sotto-attacco-j1mo9ztz",
+    "publishedDate": "2026-11-14T07:44:06.000Z",
+    "author": "Franco Sangiovanni",
+    "highlights": [
+     "La sottosegretaria all’Economia e Finanze Sandra Savino ha parlato dei falsi allarmi bomba nelle scuole durante la visita al Gruppo della Guardia di Finanza di Sibari: « L’Italia è sotto attacco, è un’emergenza che ormai va avanti da giorni», ha detto. Secondo Savino il governo Meloni aveva già conv"
+    ],
+    "image": "https://images.lac.atexcloud.io/view/acePublic/alias/contentid/1v3g0zig50vlf4nyatw/0/sandrasavinosibarifinanza-jpg.jpeg?f=3%3A2"
+   },
+   {
+    "id": "https://www.nu.nl/buitenland/6416499/afzender-bommeldingen-strijdt-voor-mannenstaat-band-met-rusland-onduidelijk.html",
+    "title": "Afzender bommeldingen strijdt voor 'mannenstaat', band met Rusland onduidelijk | Buitenland | NU.nl",
+    "url": "https://www.nu.nl/buitenland/6416499/afzender-bommeldingen-strijdt-voor-mannenstaat-band-met-rusland-onduidelijk.html",
+    "publishedDate": "2026-11-14T18:50:33.000Z",
+    "author": "Denian Franken",
+    "highlights": [
+     "Recente bommeldingen bij Europese mediabedrijven en scholen werden verstuurd door iemand die zich Mikhail Andropov noemt. Zijn mails staan vol dreigementen en lugubere oproepen tot massamoord. Hij zegt te handelen namens de radicale Russische groep Mannenstaat, maar zijn band met Rusland is onduidel"
+    ],
+    "image": "https://images.nu.nl/m/vfux4uga01gx_wd1280/0/0/1919/1080/afzender-bommeldingen-strijdt-voor-mannenstaat-band-met-rusland-onduidelijk.jpg"
+   },
+   {
+    "id": "https://politicswiredaily.com/article/2026-11-14-ai-clog-uk-public-bodies-battle-onslaugh/",
+    "title": "‘AI clog’: UK public bodies battle onslaught of chatbot-generated complaints | PoliticsWireDaily",
+    "url": "https://politicswiredaily.com/article/2026-11-14-ai-clog-uk-public-bodies-battle-onslaugh/",
+    "publishedDate": "2026-11-14T05:12:13.000Z",
+    "author": "Marcus Reid",
+    "highlights": [
+     "Public bodies across the UK are overwhelmed with AI-generated complaints and requests that strain staff resources and complicate case handling.\n\nHollie Wickens, a senior caseworker in a Labour MP's office, reports that AI-generated correspondence began as \"a trickle in 2024\" but has become \"an onsla"
+    ],
+    "image": "https://politicswiredaily.com/media/2026-11-14-ai-clog-uk-public-bodies-battle-onslaugh"
+   },
+   {
+    "id": "https://www.sverigesradio.se/artikel/orebro-kommun-stoppade-omfattande-begaran-om-handlingar",
+    "title": "Örebro kommun stoppade omfattande begäran om handlingar | Sveriges Radio",
+    "url": "https://www.sverigesradio.se/artikel/orebro-kommun-stoppade-omfattande-begaran-om-handlingar",
+    "publishedDate": "2026-11-14T04:55:00.000Z",
+    "highlights": [
+     "- 30 anställda och flera hundra arbetstimmar lade Örebro kommun på att hantera en omfattande begäran av offentliga handlingar. Detta har Dagens Samhälle tidigare uppmärksammat.\n- Vid varje kontakt via den aktuella mejladressen utökades begäran, vilket var tydligt gjort med hjälp av AI. Till slut sat"
+    ],
+    "image": "https://image-api.sr.se/v1/static/AA/159/b0c24161-43db-43ec-8eed-3d51288b55e6.png?w=1200&h=675&q=75"
+   },
+   {
+    "id": "https://resfutura.pl/fala-falszywych-alarmow-bombowych-w-europie-dopisuje-sie-do-blisko-500-incydentow-hybrydowych-od-2022-roku/",
+    "title": "Fala fałszywych alarmów bombowych w Europie dopisuje się do blisko 500 incydentów hybrydowych od 2022 roku - Res Futura",
+    "url": "https://resfutura.pl/fala-falszywych-alarmow-bombowych-w-europie-dopisuje-sie-do-blisko-500-incydentow-hybrydowych-od-2022-roku/",
+    "publishedDate": "2026-11-14T17:26:38.000Z",
+    "highlights": [
+     "Piątego dnia miesiąca groźby dotarły do lotów z Kopenhagi, Dublina, Helsinek, Madrytu, Mediolanu i Warszawy, a trzy maszyny Ryanair lądowały awaryjnie w Sofii. Dzień później e-maile podpisane „Mikhail Andropov”, zatytułowane „Message to the West”, dostały RTE, Sky News i bułgarska Nova TV, a irlandz"
+    ],
+    "image": "https://resfutura.pl/wp-content/uploads/2026/11/res-futura-151222.png"
+   },
+   {
+    "id": "https://www.apprendistadigitale.it/allarme-bomba-scuole-taiwan-account-rubati/",
+    "title": "Allarme bomba scuole: email da Taiwan e account rubati - Apprendista Digitale",
+    "url": "https://www.apprendistadigitale.it/allarme-bomba-scuole-taiwan-account-rubati/",
+    "publishedDate": "2026-11-14T08:00:00.000Z",
+    "author": "Redazione Apprendista Digitale",
+    "highlights": [
+     "Mercole ... Ne abbiamo parlato nel nostro articolo su l’allarme bomba via email arrivato anche nelle scuole di Terni.\n\nIl giorno dopo, giovedì 12 novembre, è arrivata una seconda ondata: secondo un primo conteggio di Palazzo Chigi i messaggi hanno raggiunto circa 1.800 scuole, con segnalazioni da Ve"
+    ],
+    "image": "https://www.apprendistadigitale.it/wp-content/uploads/2026/11/allarme-bomba-scuole-taiwan-account-rubati.png"
+   },
+   {
+    "id": "https://deutschsprechen.net/tausende-schulen-mit-bombendrohung-ausser-suedtirol/",
+    "title": "Tausende Schulen mit Bombendrohung – außer Südtirol | Deutsch Sprechen",
+    "url": "https://deutschsprechen.net/tausende-schulen-mit-bombendrohung-ausser-suedtirol/",
+    "publishedDate": "2026-11-14T06:39:12.000Z",
+    "author": "Mitarbeiter",
+    "highlights": [
+     "An Tausenden Schulen in Italien gehen Mails mit Bombendrohungen ein. Südtirol bleibt bislang verschont. Ein Bildungslandesrat nennt dafür einen Grund.\n\nAm Mittwoch bekamen rund 6.000 Schulen in Italien Drohmails, am Donnerstag waren es knapp 3.780 – in Südtirol ging dagegen offenbar keine einzige en"
+    ],
+    "image": "https://s.tstat.net/s/paper/_next/static/media/zoom-in.f7dae02f.svg"
+   },
+   {
+    "id": "https://www.goslarsche.de/Nachrichten/Bombendrohung-tt42667.html",
+    "title": "Bombendrohung",
+    "url": "https://www.goslarsche.de/Nachrichten/Bombendrohung-tt42667.html",
+    "publishedDate": "2026-11-14T23:14:51.000Z",
+    "highlights": [
+     "und Generalstaatsanwaltschaft ermitteln gegen ein Quartett. Es gibt Goslarer\n...\nTagelang sorgten Bombendrohungen gegen Schulen, Behörden und Unternehmen für viele Polizeieinsätze. Nun haben Polizei und Staatsanwaltschaft zwei Verdächtige ermittelt."
+    ],
+    "image": "https://www.goslarsche.de/Layout/Custom/Images/Logo.svg"
+   },
+   {
+    "id": "https://wochentlich.de/tausende-schulen-mit-bombendrohung-ausser-suedtirol/",
+    "title": "Tausende Schulen mit Bombendrohung – außer Südtirol - Wöchentlich",
+    "url": "https://wochentlich.de/tausende-schulen-mit-bombendrohung-ausser-suedtirol/",
+    "publishedDate": "2026-11-14T04:48:09.000Z",
+    "author": "wochentlich.de Website",
+    "highlights": [
+     "Am Mittwoch bekamen rund 6.000 Schulen in Italien Drohmails, am Donnerstag waren es knapp 3 ... 780 – in Südtirol ging dagegen offenbar keine einzige entsprechende Nachricht ein. Der Grund könnte mit einer Besonderheit der autonomen Provinz zusammenhängen."
+    ]
+   }
+  ],
+  "searchTime": 6294.3,
+  "costDollars": {
+   "total": 0.012
+  },
+  "output": {
+   "content": {
+    "events": [
+     {
+      "url": "https://www.i24news.tv/en/news/international/europe/artc-how-hoax-bomb-threats-are-disrupting-life-across-europe",
+      "date": "2026-11-11",
+      "type": "T5",
+      "target": "about 6,300 schools in Italy; 312 evacuated",
+      "voice": "official",
+      "attribution": "suspected",
+      "quote": "Italian Prime Minister Giorgia Meloni said there was no indication of a credible threat, and senior officials described the messages as part of a strategy to sow panic.",
+      "country": "Italy"
+     },
+     {
+      "url": "https://www.lacnews24.it/attualita/allarmi-bomba-nelle-scuole-la-sottosegretaria-savino-in-visita-alla-guardia-di-finanza-di-sibari-litalia-e-sotto-attacco-j1mo9ztz",
+      "date": "2026-11-12",
+      "type": "T5",
+      "target": "3,788 schools from Veneto to Sicily; 77 evacuated",
+      "voice": "official",
+      "attribution": "none",
+      "quote": "« L’Italia è sotto attacco, è un’emergenza che ormai va avanti da giorni», ha detto.",
+      "country": "Italy"
+     },
+     {
+      "url": "https://www.nu.nl/buitenland/6416499/afzender-bommeldingen-strijdt-voor-mannenstaat-band-met-rusland-onduidelijk.html",
+      "date": "2026-11-06",
+      "type": "T6",
+      "target": "media companies in UK and Ireland, including Irish Independent and RTÉ",
+      "voice": "expert",
+      "attribution": "named",
+      "quote": "Rowin Jansen, universitair docent veiligheidsrecht aan de Radboud Universiteit, ziet in de reeks bommeldingen tekenen van hybride oorlogsvoering.",
+      "country": "Ireland"
+     },
+     {
+      "url": "https://politicswiredaily.com/article/2026-11-14-ai-clog-uk-public-bodies-battle-onslaught/",
+      "date": "2026-11-14",
+      "type": "AI",
+      "target": "UK MPs' offices, local authorities, lawyers and schools; half of emails AI-generated",
+      "voice": "nobody",
+      "attribution": "none",
+      "quote": "Half the emails her office receives are now \"some form of AI,\" she says.",
+      "country": "United Kingdom"
+     },
+     {
+      "url": "https://www.sverigesradio.se/artikel/orebro-kommun-stoppade-omfattande-begaran-om-handlingar",
+      "date": "2026-11-14",
+      "type": "AI",
+      "target": "Örebro municipality; one expanded public-records request handled by 30 staff over hundreds of hours",
+      "voice": "nobody",
+      "attribution": "none",
+      "quote": "Vid varje kontakt via den aktuella mejladressen utökades begäran, vilket var tydligt gjort med hjälp av AI.",
+      "country": "Sweden"
+     },
+     {
+      "url": "https://resfutura.pl/fala-falszywych-alarmow-bombowych-w-europie-dopisuje-sie-do-blisko-500-incydentow-hybrydowych-od-2022-roku/",
+      "date": "2026-11-11",
+      "type": "T5",
+      "target": "about 6,000 Italian schools and over 300 schools in Northern Ireland",
+      "voice": "official",
+      "attribution": "suspected",
+      "quote": "11 listopada identyczny mail z opisem zdalnie wyzwalanego ładunku i brutalnym szczegółem o dobijaniu ofiar nożami dostało około 6 tysięcy włoskich szkół.",
+      "country": "Italy"
+     }
+    ]
+   },
+   "grounding": [
+    {
+     "field": "events[0].url",
+     "citations": [
+      {
+       "url": "https://www.i24news.tv/en/news/international/europe/artc-how-hoax-bomb-threats-are-disrupting-life-across-europe",
+       "title": "How Hoax Bomb Threats Are Disrupting Life Across Europe - i24NEWS"
+      }
+     ],
+     "confidence": "high"
+    },
+    {
+     "field": "events[0].date",
+     "citations": [
+      {
+       "url": "https://www.i24news.tv/en/news/international/europe/artc-how-hoax-bomb-threats-are-disrupting-life-across-europe",
+       "title": "How Hoax Bomb Threats Are Disrupting Life Across Europe - i24NEWS"
+      }
+     ],
+     "confidence": "high"
+    },
+    {
+     "field": "events[0].type",
+     "citations": [
+      {
+       "url": "https://www.i24news.tv/en/news/international/europe/artc-how-hoax-bomb-threats-are-disrupting-life-across-europe",
+       "title": "How Hoax Bomb Threats Are Disrupting Life Across Europe - i24NEWS"
+      }
+     ],
+     "confidence": "high"
+    },
+    {
+     "field": "events[0].target",
+     "citations": [
+      {
+       "url": "https://www.i24news.tv/en/news/international/europe/artc-how-hoax-bomb-threats-are-disrupting-life-across-europe",
+       "title": "How Hoax Bomb Threats Are Disrupting Life Across Europe - i24NEWS"
+      }
+     ],
+     "confidence": "high"
+    },
+    {
+     "field": "events[0].voice",
+     "citations": [
+      {
+       "url": "https://www.i24news.tv/en/news/international/europe/artc-how-hoax-bomb-threats-are-disrupting-life-across-europe",
+       "title": "How Hoax Bomb Threats Are Disrupting Life Across Europe - i24NEWS"
+      }
+     ],
+     "confidence": "high"
+    },
+    {
+     "field": "events[0].attribution",
+     "citations": [
+      {
+       "url": "https://www.i24news.tv/en/news/international/europe/artc-how-hoax-bomb-threats-are-disrupting-life-across-europe",
+       "title": "How Hoax Bomb Threats Are Disrupting Life Across Europe - i24NEWS"
+      }
+     ],
+     "confidence": "high"
+    },
+    {
+     "field": "events[0].quote",
+     "citations": [
+      {
+       "url": "https://www.i24news.tv/en/news/international/europe/artc-how-hoax-bomb-threats-are-disrupting-life-across-europe",
+       "title": "How Hoax Bomb Threats Are Disrupting Life Across Europe - i24NEWS"
+      }
+     ],
+     "confidence": "high"
+    },
+    {
+     "field": "events[0].country",
+     "citations": [
+      {
+       "url": "https://www.i24news.tv/en/news/international/europe/artc-how-hoax-bomb-threats-are-disrupting-life-across-europe",
+       "title": "How Hoax Bomb Threats Are Disrupting Life Across Europe - i24NEWS"
+      }
+     ],
+     "confidence": "high"
+    },
+    {
+     "field": "events[1].url",
+     "citations": [
+      {
+       "url": "https://www.lacnews24.it/attualita/allarmi-bomba-nelle-scuole-la-sottosegretaria-savino-in-visita-alla-guardia-di-finanza-di-sibari-litalia-e-sotto-attacco-j1mo9ztz",
+       "title": "Allarmi bomba nelle scuole, la sottosegretaria Savino in visita alla Guardia di Finanza di Sibari: «L’Italia è sotto attacco»"
+      }
+     ],
+     "confidence": "high"
+    },
+    {
+     "field": "events[1].date",
+     "citations": [
+      {
+       "url": "https://www.lacnews24.it/attualita/allarmi-bomba-nelle-scuole-la-sottosegretaria-savino-in-visita-alla-guardia-di-finanza-di-sibari-litalia-e-sotto-attacco-j1mo9ztz",
+       "title": "Allarmi bomba nelle scuole, la sottosegretaria Savino in visita alla Guardia di Finanza di Sibari: «L’Italia è sotto attacco»"
+      }
+     ],
+     "confidence": "high"
+    },
+    {
+     "field": "events[1].type",
+     "citations": [
+      {
+       "url": "https://www.lacnews24.it/attualita/allarmi-bomba-nelle-scuole-la-sottosegretaria-savino-in-visita-alla-guardia-di-finanza-di-sibari-litalia-e-sotto-attacco-j1mo9ztz",
+       "title": "Allarmi bomba nelle scuole, la sottosegretaria Savino in visita alla Guardia di Finanza di Sibari: «L’Italia è sotto attacco»"
+      }
+     ],
+     "confidence": "high"
+    },
+    {
+     "field": "events[1].target",
+     "citations": [
+      {
+       "url": "https://www.lacnews24.it/attualita/allarmi-bomba-nelle-scuole-la-sottosegretaria-savino-in-visita-alla-guardia-di-finanza-di-sibari-litalia-e-sotto-attacco-j1mo9ztz",
+       "title": "Allarmi bomba nelle scuole, la sottosegretaria Savino in visita alla Guardia di Finanza di Sibari: «L’Italia è sotto attacco»"
+      }
+     ],
+     "confidence": "high"
+    },
+    {
+     "field": "events[1].voice",
+     "citations": [
+      {
+       "url": "https://www.lacnews24.it/attualita/allarmi-bomba-nelle-scuole-la-sottosegretaria-savino-in-visita-alla-guardia-di-finanza-di-sibari-litalia-e-sotto-attacco-j1mo9ztz",
+       "title": "Allarmi bomba nelle scuole, la sottosegretaria Savino in visita alla Guardia di Finanza di Sibari: «L’Italia è sotto attacco»"
+      }
+     ],
+     "confidence": "high"
+    },
+    {
+     "field": "events[1].attribution",
+     "citations": [
+      {
+       "url": "https://www.lacnews24.it/attualita/allarmi-bomba-nelle-scuole-la-sottosegretaria-savino-in-visita-alla-guardia-di-finanza-di-sibari-litalia-e-sotto-attacco-j1mo9ztz",
+       "title": "Allarmi bomba nelle scuole, la sottosegretaria Savino in visita alla Guardia di Finanza di Sibari: «L’Italia è sotto attacco»"
+      }
+     ],
+     "confidence": "medium"
+    },
+    {
+     "field": "events[1].quote",
+     "citations": [
+      {
+       "url": "https://www.lacnews24.it/attualita/allarmi-bomba-nelle-scuole-la-sottosegretaria-savino-in-visita-alla-guardia-di-finanza-di-sibari-litalia-e-sotto-attacco-j1mo9ztz",
+       "title": "Allarmi bomba nelle scuole, la sottosegretaria Savino in visita alla Guardia di Finanza di Sibari: «L’Italia è sotto attacco»"
+      }
+     ],
+     "confidence": "high"
+    },
+    {
+     "field": "events[1].country",
+     "citations": [
+      {
+       "url": "https://www.lacnews24.it/attualita/allarmi-bomba-nelle-scuole-la-sottosegretaria-savino-in-visita-alla-guardia-di-finanza-di-sibari-litalia-e-sotto-attacco-j1mo9ztz",
+       "title": "Allarmi bomba nelle scuole, la sottosegretaria Savino in visita alla Guardia di Finanza di Sibari: «L’Italia è sotto attacco»"
+      }
+     ],
+     "confidence": "high"
+    },
+    {
+     "field": "events[2].url",
+     "citations": [
+      {
+       "url": "https://www.nu.nl/buitenland/6416499/afzender-bommeldingen-strijdt-voor-mannenstaat-band-met-rusland-onduidelijk.html",
+       "title": "Afzender bommeldingen strijdt voor 'mannenstaat', band met Rusland onduidelijk | Buitenland | NU.nl"
+      }
+     ],
+     "confidence": "high"
+    },
+    {
+     "field": "events[2].date",
+     "citations": [
+      {
+       "url": "https://www.nu.nl/buitenland/6416499/afzender-bommeldingen-strijdt-voor-mannenstaat-band-met-rusland-onduidelijk.html",
+       "title": "Afzender bommeldingen strijdt voor 'mannenstaat', band met Rusland onduidelijk | Buitenland | NU.nl"
+      }
+     ],
+     "confidence": "medium"
+    },
+    {
+     "field": "events[2].type",
+     "citations": [
+      {
+       "url": "https://www.nu.nl/buitenland/6416499/afzender-bommeldingen-strijdt-voor-mannenstaat-band-met-rusland-onduidelijk.html",
+       "title": "Afzender bommeldingen strijdt voor 'mannenstaat', band met Rusland onduidelijk | Buitenland | NU.nl"
+      }
+     ],
+     "confidence": "high"
+    },
+    {
+     "field": "events[2].target",
+     "citations": [
+      {
+       "url": "https://www.nu.nl/buitenland/6416499/afzender-bommeldingen-strijdt-voor-mannenstaat-band-met-rusland-onduidelijk.html",
+       "title": "Afzender bommeldingen strijdt voor 'mannenstaat', band met Rusland onduidelijk | Buitenland | NU.nl"
+      }
+     ],
+     "confidence": "high"
+    },
+    {
+     "field": "events[2].voice",
+     "citations": [
+      {
+       "url": "https://www.nu.nl/buitenland/6416499/afzender-bommeldingen-strijdt-voor-mannenstaat-band-met-rusland-onduidelijk.html",
+       "title": "Afzender bommeldingen strijdt voor 'mannenstaat', band met Rusland onduidelijk | Buitenland | NU.nl"
+      }
+     ],
+     "confidence": "high"
+    },
+    {
+     "field": "events[2].attribution",
+     "citations": [
+      {
+       "url": "https://www.nu.nl/buitenland/6416499/afzender-bommeldingen-strijdt-voor-mannenstaat-band-met-rusland-onduidelijk.html",
+       "title": "Afzender bommeldingen strijdt voor 'mannenstaat', band met Rusland onduidelijk | Buitenland | NU.nl"
+      }
+     ],
+     "confidence": "medium"
+    },
+    {
+     "field": "events[2].quote",
+     "citations": [
+      {
+       "url": "https://www.nu.nl/buitenland/6416499/afzender-bommeldingen-strijdt-voor-mannenstaat-band-met-rusland-onduidelijk.html",
+       "title": "Afzender bommeldingen strijdt voor 'mannenstaat', band met Rusland onduidelijk | Buitenland | NU.nl"
+      }
+     ],
+     "confidence": "high"
+    },
+    {
+     "field": "events[2].country",
+     "citations": [
+      {
+       "url": "https://www.nu.nl/buitenland/6416499/afzender-bommeldingen-strijdt-voor-mannenstaat-band-met-rusland-onduidelijk.html",
+       "title": "Afzender bommeldingen strijdt voor 'mannenstaat', band met Rusland onduidelijk | Buitenland | NU.nl"
+      }
+     ],
+     "confidence": "high"
+    },
+    {
+     "field": "events[3].url",
+     "citations": [
+      {
+       "url": "https://politicswiredaily.com/article/2026-11-14-ai-clog-uk-public-bodies-battle-onslaugh/",
+       "title": "‘AI clog’: UK public bodies battle onslaught of chatbot-generated complaints | PoliticsWireDaily"
+      }
+     ],
+     "confidence": "high"
+    },
+    {
+     "field": "events[3].date",
+     "citations": [
+      {
+       "url": "https://politicswiredaily.com/article/2026-11-14-ai-clog-uk-public-bodies-battle-onslaugh/",
+       "title": "‘AI clog’: UK public bodies battle onslaught of chatbot-generated complaints | PoliticsWireDaily"
+      }
+     ],
+     "confidence": "high"
+    },
+    {
+     "field": "events[3].type",
+     "citations": [
+      {
+       "url": "https://politicswiredaily.com/article/2026-11-14-ai-clog-uk-public-bodies-battle-onslaugh/",
+       "title": "‘AI clog’: UK public bodies battle onslaught of chatbot-generated complaints | PoliticsWireDaily"
+      }
+     ],
+     "confidence": "high"
+    },
+    {
+     "field": "events[3].target",
+     "citations": [
+      {
+       "url": "https://politicswiredaily.com/article/2026-11-14-ai-clog-uk-public-bodies-battle-onslaugh/",
+       "title": "‘AI clog’: UK public bodies battle onslaught of chatbot-generated complaints | PoliticsWireDaily"
+      }
+     ],
+     "confidence": "high"
+    },
+    {
+     "field": "events[3].voice",
+     "citations": [
+      {
+       "url": "https://politicswiredaily.com/article/2026-11-14-ai-clog-uk-public-bodies-battle-onslaugh/",
+       "title": "‘AI clog’: UK public bodies battle onslaught of chatbot-generated complaints | PoliticsWireDaily"
+      }
+     ],
+     "confidence": "medium"
+    },
+    {
+     "field": "events[3].attribution",
+     "citations": [
+      {
+       "url": "https://politicswiredaily.com/article/2026-11-14-ai-clog-uk-public-bodies-battle-onslaugh/",
+       "title": "‘AI clog’: UK public bodies battle onslaught of chatbot-generated complaints | PoliticsWireDaily"
+      }
+     ],
+     "confidence": "high"
+    },
+    {
+     "field": "events[3].quote",
+     "citations": [
+      {
+       "url": "https://politicswiredaily.com/article/2026-11-14-ai-clog-uk-public-bodies-battle-onslaugh/",
+       "title": "‘AI clog’: UK public bodies battle onslaught of chatbot-generated complaints | PoliticsWireDaily"
+      }
+     ],
+     "confidence": "high"
+    },
+    {
+     "field": "events[3].country",
+     "citations": [
+      {
+       "url": "https://politicswiredaily.com/article/2026-11-14-ai-clog-uk-public-bodies-battle-onslaugh/",
+       "title": "‘AI clog’: UK public bodies battle onslaught of chatbot-generated complaints | PoliticsWireDaily"
+      }
+     ],
+     "confidence": "high"
+    },
+    {
+     "field": "events[4].url",
+     "citations": [
+      {
+       "url": "https://www.sverigesradio.se/artikel/orebro-kommun-stoppade-omfattande-begaran-om-handlingar",
+       "title": "Örebro kommun stoppade omfattande begäran om handlingar | Sveriges Radio"
+      }
+     ],
+     "confidence": "high"
+    },
+    {
+     "field": "events[4].date",
+     "citations": [
+      {
+       "url": "https://www.sverigesradio.se/artikel/orebro-kommun-stoppade-omfattande-begaran-om-handlingar",
+       "title": "Örebro kommun stoppade omfattande begäran om handlingar | Sveriges Radio"
+      }
+     ],
+     "confidence": "high"
+    },
+    {
+     "field": "events[4].type",
+     "citations": [
+      {
+       "url": "https://www.sverigesradio.se/artikel/orebro-kommun-stoppade-omfattande-begaran-om-handlingar",
+       "title": "Örebro kommun stoppade omfattande begäran om handlingar | Sveriges Radio"
+      }
+     ],
+     "confidence": "high"
+    },
+    {
+     "field": "events[4].target",
+     "citations": [
+      {
+       "url": "https://www.sverigesradio.se/artikel/orebro-kommun-stoppade-omfattande-begaran-om-handlingar",
+       "title": "Örebro kommun stoppade omfattande begäran om handlingar | Sveriges Radio"
+      }
+     ],
+     "confidence": "high"
+    },
+    {
+     "field": "events[4].voice",
+     "citations": [
+      {
+       "url": "https://www.sverigesradio.se/artikel/orebro-kommun-stoppade-omfattande-begaran-om-handlingar",
+       "title": "Örebro kommun stoppade omfattande begäran om handlingar | Sveriges Radio"
+      }
+     ],
+     "confidence": "medium"
+    },
+    {
+     "field": "events[4].attribution",
+     "citations": [
+      {
+       "url": "https://www.sverigesradio.se/artikel/orebro-kommun-stoppade-omfattande-begaran-om-handlingar",
+       "title": "Örebro kommun stoppade omfattande begäran om handlingar | Sveriges Radio"
+      }
+     ],
+     "confidence": "high"
+    },
+    {
+     "field": "events[4].quote",
+     "citations": [
+      {
+       "url": "https://www.sverigesradio.se/artikel/orebro-kommun-stoppade-omfattande-begaran-om-handlingar",
+       "title": "Örebro kommun stoppade omfattande begäran om handlingar | Sveriges Radio"
+      }
+     ],
+     "confidence": "high"
+    },
+    {
+     "field": "events[4].country",
+     "citations": [
+      {
+       "url": "https://www.sverigesradio.se/artikel/orebro-kommun-stoppade-omfattande-begaran-om-handlingar",
+       "title": "Örebro kommun stoppade omfattande begäran om handlingar | Sveriges Radio"
+      }
+     ],
+     "confidence": "high"
+    },
+    {
+     "field": "events[5].url",
+     "citations": [
+      {
+       "url": "https://resfutura.pl/fala-falszywych-alarmow-bombowych-w-europie-dopisuje-sie-do-blisko-500-incydentow-hybrydowych-od-2022-roku/",
+       "title": "Fala fałszywych alarmów bombowych w Europie dopisuje się do blisko 500 incydentów hybrydowych od 2022 roku - Res Futura"
+      }
+     ],
+     "confidence": "high"
+    },
+    {
+     "field": "events[5].date",
+     "citations": [
+      {
+       "url": "https://resfutura.pl/fala-falszywych-alarmow-bombowych-w-europie-dopisuje-sie-do-blisko-500-incydentow-hybrydowych-od-2022-roku/",
+       "title": "Fala fałszywych alarmów bombowych w Europie dopisuje się do blisko 500 incydentów hybrydowych od 2022 roku - Res Futura"
+      }
+     ],
+     "confidence": "high"
+    },
+    {
+     "field": "events[5].type",
+     "citations": [
+      {
+       "url": "https://resfutura.pl/fala-falszywych-alarmow-bombowych-w-europie-dopisuje-sie-do-blisko-500-incydentow-hybrydowych-od-2022-roku/",
+       "title": "Fala fałszywych alarmów bombowych w Europie dopisuje się do blisko 500 incydentów hybrydowych od 2022 roku - Res Futura"
+      }
+     ],
+     "confidence": "high"
+    },
+    {
+     "field": "events[5].target",
+     "citations": [
+      {
+       "url": "https://resfutura.pl/fala-falszywych-alarmow-bombowych-w-europie-dopisuje-sie-do-blisko-500-incydentow-hybrydowych-od-2022-roku/",
+       "title": "Fala fałszywych alarmów bombowych w Europie dopisuje się do blisko 500 incydentów hybrydowych od 2022 roku - Res Futura"
+      }
+     ],
+     "confidence": "high"
+    },
+    {
+     "field": "events[5].voice",
+     "citations": [
+      {
+       "url": "https://resfutura.pl/fala-falszywych-alarmow-bombowych-w-europie-dopisuje-sie-do-blisko-500-incydentow-hybrydowych-od-2022-roku/",
+       "title": "Fala fałszywych alarmów bombowych w Europie dopisuje się do blisko 500 incydentów hybrydowych od 2022 roku - Res Futura"
+      }
+     ],
+     "confidence": "medium"
+    },
+    {
+     "field": "events[5].attribution",
+     "citations": [
+      {
+       "url": "https://resfutura.pl/fala-falszywych-alarmow-bombowych-w-europie-dopisuje-sie-do-blisko-500-incydentow-hybrydowych-od-2022-roku/",
+       "title": "Fala fałszywych alarmów bombowych w Europie dopisuje się do blisko 500 incydentów hybrydowych od 2022 roku - Res Futura"
+      }
+     ],
+     "confidence": "high"
+    },
+    {
+     "field": "events[5].quote",
+     "citations": [
+      {
+       "url": "https://resfutura.pl/fala-falszywych-alarmow-bombowych-w-europie-dopisuje-sie-do-blisko-500-incydentow-hybrydowych-od-2022-roku/",
+       "title": "Fala fałszywych alarmów bombowych w Europie dopisuje się do blisko 500 incydentów hybrydowych od 2022 roku - Res Futura"
+      }
+     ],
+     "confidence": "high"
+    },
+    {
+     "field": "events[5].country",
+     "citations": [
+      {
+       "url": "https://resfutura.pl/fala-falszywych-alarmow-bombowych-w-europie-dopisuje-sie-do-blisko-500-incydentow-hybrydowych-od-2022-roku/",
+       "title": "Fala fałszywych alarmów bombowych w Europie dopisuje się do blisko 500 incydentów hybrydowych od 2022 roku - Res Futura"
+      }
+     ],
+     "confidence": "high"
+    }
+   ]
+  }
+ }
+}

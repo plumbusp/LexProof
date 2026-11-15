@@ -6,21 +6,26 @@ Four Exa features, each feeding the same saved files the map already reads
 1. sweep       /search type="deep" per country and layer, in the country's OWN languages
                (additional_queries), localised (user_location), news-only, date-filtered,
                with an output_schema so Exa returns structured events plus field-level grounding.
-2. verify      /contents on every URL an event cites: the full page text is fetched and the
-               event's quote must really be in it (no source, no quote, no dot - plan rule 1).
+2. verify      /contents on every URL an event cites, through app/pages.py: ONE call per URL ever
+               (text + an English summary schema). The event's quote must really be in the
+               ORIGINAL text (no source, no quote, no dot - plan rule 1).
 3. corroborate /search type="deep-lite" seeded with each hostile event's headline, excluding its
                own site, +-21 days: other outlets reporting the same thing. A second site is what
                lets an event reach level 4 (threatmap.level pools domains per country and type).
 4. investigate Exa Agent API (/agent/runs): an autonomous multi-step research run on one country,
                triggered from the map's side panel. Same schema, same verification.
 
-Exa (like Gemini in threatextract) only READS and fills fields. Code still decides validity,
-scope and the evidence level (plan rule 2).
+5. live       'Check the last 24 hours' (refresh): one pan-European deep search, 24 h window, new URLs only.
 
-  python -m app.threatdeep --sweep [--country Latvia] [--since 2025-01]   spends Exa credits (~$0.02 a call)
-  python -m app.threatdeep --corroborate                                  spends Exa credits
-  python -m app.threatdeep --investigate Latvia                           spends Exa credits (agent run)
-  python -m app.threatdeep --dry-run                                      prints the calls, spends nothing
+Every call goes through app/exacall.py (request cache, budget caps, ledger.jsonl).
+Exa only READS and fills fields. Code still decides validity, scope and the evidence level (plan rule 2).
+
+  python -m app.threatdeep --sweep [--country Latvia] [--since 2025-01] [--cap 1]   back-fill (~$0.025 a call + pages)
+  python -m app.threatdeep --incremental [--cap 1]       only since the last successful run per country/layer
+  python -m app.threatdeep --refresh                     the last 24 hours (~$0.012-0.022)
+  python -m app.threatdeep --investigate Latvia          Exa Agent, effort low (~$0.025 + pages)
+  python -m app.threatdeep --corroborate                 spends Exa credits
+  python -m app.threatdeep --dry-run                     prints the calls, spends nothing
 """
 import argparse
 import hashlib
@@ -30,6 +35,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date, datetime, timedelta, timezone
 
+from . import exacall, pages
 from . import threatmap as tm
 from . import threatstore as ts
 from .threatextract import quote_in_text
@@ -190,12 +196,15 @@ def additional_queries(country: str, layer: str) -> list[str]:
     return [PHRASES[lang][i] for lang in LANGS[country] for i in idx][:10]
 
 
-def sweep_request(country: str, layer: str, since: date, today: date | None = None) -> dict:
+def sweep_request(country: str, layer: str, since: date, today: date | None = None, num_results: int = 25,
+                  incremental: bool = False) -> dict:
+    """A back-fill (id deep|<since-month>|...) or an incremental window (id inc|<since-day>|...)."""
     today = today or date.today()
     q = QUERY[layer].format(c=country)
-    return {"id": f"deep|{_month(since)}|{country}|{layer}", "via": "exa-deep", "country": country, "group": layer,
+    rid = f"inc|{since.isoformat()}|{country}|{layer}" if incremental else f"deep|{_month(since)}|{country}|{layer}"
+    return {"id": rid, "via": "exa-deep", "country": country, "group": layer,
             "query": q, "months": _months_between(since, today), "month": _month(today),
-            "kwargs": {"type": "deep", "category": "news", "num_results": 25, "user_location": ISO2[country],
+            "kwargs": {"type": "deep", "category": "news", "num_results": num_results, "user_location": ISO2[country],
                        "start_published_date": f"{since.isoformat()}T00:00:00.000Z",
                        "end_published_date": f"{today.isoformat()}T23:59:59.999Z",
                        "additional_queries": additional_queries(country, layer),
@@ -207,6 +216,33 @@ def sweep_plan(countries=None, layers=("hostile", "precursor"), since: date = da
     return [sweep_request(c, lay, since) for c in sorted(countries or tm.SCOPE) for lay in layers]
 
 
+def last_swept() -> dict[tuple[str, str], date]:
+    """(country, layer) -> day of the last successful deep sweep (back-fill or incremental) stored for it."""
+    out: dict[tuple[str, str], date] = {}
+    for r in ts.read_jsonl(tm.RESULTS):
+        if str(r.get("id", "")).startswith(("deep|", "inc|")) and r.get("country") and r.get("fetched_at"):
+            d = date.fromisoformat(r["fetched_at"][:10])
+            k = (r["country"], r.get("group"))
+            out[k] = max(out.get(k, d), d)
+    return out
+
+
+def incremental_plan(countries=None, layers=("hostile", "precursor"), today: date | None = None) -> list[dict]:
+    """Only the window since the last successful run (minus one day of overlap), 10 results.
+    A country/layer never swept gets the full back-fill since Jan 2025 instead. Swept today: nothing to do."""
+    today = today or date.today()
+    last = last_swept()
+    out = []
+    for c in sorted(countries or tm.SCOPE):
+        for lay in layers:
+            d = last.get((c, lay))
+            if d is None:
+                out.append(sweep_request(c, lay, date(2025, 1, 1), today))
+            elif d < today:
+                out.append(sweep_request(c, lay, d - timedelta(days=1), today, num_results=10, incremental=True))
+    return out
+
+
 # ---------- reading Exa's answer
 
 def _get(o, k, default=None):
@@ -214,13 +250,13 @@ def _get(o, k, default=None):
 
 
 def _norm_url(u: str) -> str:
-    return (u or "").split("#")[0].rstrip("/").lower()
+    return pages.norm(u)
 
 
 def parse_output(output) -> tuple[list[dict], dict[str, str]]:
     """Exa's structured events, and per-event grounding confidence ('events[3]' -> 'high')."""
     content = _get(output, "content") if output is not None else None
-    if content is None:
+    if content is None and output is not None:
         content = _get(output, "structured")
     if isinstance(content, str):
         try:
@@ -229,7 +265,7 @@ def parse_output(output) -> tuple[list[dict], dict[str, str]]:
             content = {}
     evs = [e for e in (_get(content, "events") or []) if isinstance(e, dict)] if content else []
     conf = {}
-    for g in _get(output, "grounding") or []:
+    for g in (_get(output, "grounding") if output is not None else None) or []:
         f = _get(g, "field") or ""
         if f.startswith("events[") and _get(g, "confidence"):
             conf.setdefault(f.split("]")[0] + "]", _get(g, "confidence"))
@@ -256,48 +292,78 @@ def to_item(ev: dict, country: str, layer: str, via: str, confidence: str | None
     return item
 
 
-def fetch_pages(client, urls: list[str]) -> dict[str, dict]:
-    """/contents for up to 100 URLs at once: full text for the quote check. url -> {title, text, published_date}."""
-    out = {}
-    for i in range(0, len(urls), 100):
-        try:
-            resp = client.get_contents(urls[i:i + 100], text={"maxCharacters": 60000})
-        except Exception as e:  # a failed fetch only means those events cannot be verified now
-            print(f"  contents failed: {str(e)[:160]}", flush=True)
-            continue
-        for r in resp.results or []:
-            out[_norm_url(r.url)] = {"title": r.title or "", "text": r.text or "",
-                                     "published_date": (getattr(r, "published_date", None) or "")[:10]}
-    return out
+def fetch_pages(client, urls: list[str], run: exacall.Run | None = None, quotes: dict | None = None,
+                with_summary: bool = False) -> dict[str, dict]:
+    """Kept for callers: page text via pages.get (one /contents per URL ever). url key = pages.norm."""
+    return pages.get(urls, quotes, run=run, with_summary=with_summary, client=client)
 
 
-def verify_events(client, raw: list[dict], conf: dict, results: list[dict], country: str, layer: str, via: str
-                  ) -> tuple[list[dict], dict[str, list[dict]]]:
-    """Keeps an Exa event only if its URL is one of the search results and its quote is on the fetched page.
-    Returns (articles for exa_results, url -> verified items)."""
-    by_url = {_norm_url(r["url"]): r for r in results}
-    cands = []
+def verify_events(raw: list[dict], conf: dict, results: list[dict], country: str | None, layer: str | None, via: str,
+                  run: exacall.Run | None = None, client=None, max_new: int | None = None, skip_urls: set | None = None
+                  ) -> tuple[list[dict], dict[str, list[dict]], list[dict]]:
+    """Keeps an Exa event only if its URL is one of the results and its quote is on the fetched page.
+    country/layer None: taken from the event (country field) and its type (AI -> precursor).
+    Each URL's page comes from pages.get: text for the check plus Exa's English fields, ONE call per URL ever.
+    Returns (articles for exa_results, url -> verified items, dropped [{url, reason}])."""
+    by_url = {pages.norm(r["url"]): r for r in results}
+    skip = {pages.norm(u) for u in (skip_urls or ())}
+    cands, dropped = [], []
     for n, ev in enumerate(raw):
-        u = _norm_url(ev.get("url"))
-        item = to_item(ev, country, layer, via, conf.get(f"events[{n}]"))
-        if item and u in by_url and item["quote"]:
+        u = pages.norm(ev.get("url"))
+        c = country or ev.get("country")
+        lay = layer or ("precursor" if ev.get("type") == "AI" else "hostile")
+        if c not in tm.SCOPE:
+            dropped.append({"url": ev.get("url"), "reason": "outside the 42 countries"})
+            continue
+        item = to_item(ev, c, lay, via, conf.get(f"events[{n}]"))
+        if not item:
+            dropped.append({"url": ev.get("url"), "reason": "not one of the four report types"})
+        elif u in skip:
+            dropped.append({"url": ev.get("url"), "reason": "already on the map"})
+        elif u not in by_url:
+            dropped.append({"url": ev.get("url"), "reason": "URL not among Exa's results"})
+        elif not item["quote"]:
+            dropped.append({"url": ev.get("url"), "reason": "no quote"})
+        else:
             cands.append((u, item))
-    pages = fetch_pages(client, sorted({by_url[u]["url"] for u, _ in cands})) if cands else {}
+    urls = list(dict.fromkeys(by_url[u]["url"] for u, _ in cands))
+    if max_new is not None and len(urls) > max_new:
+        keep = set(pages.norm(x) for x in urls[:max_new])
+        for u, _ in cands:
+            if u not in keep:
+                dropped.append({"url": by_url[u]["url"], "reason": "over the per-check page limit"})
+        cands = [(u, it) for u, it in cands if u in keep]
+        urls = urls[:max_new]
+    quotes = {}
+    for u, it in cands:
+        quotes.setdefault(by_url[u]["url"], it["quote"])
+    got = pages.get(urls, quotes, run=run, client=client) if urls else {}
     verified: dict[str, list[dict]] = {}
     for u, item in cands:
-        r, page = by_url[u], pages.get(u, {})
+        r, page = by_url[u], got.get(u)
+        if page is None:
+            dropped.append({"url": r["url"], "reason": "page could not be opened"})
+            continue
         hay = "\n".join([r.get("title", ""), *r.get("highlights", []), page.get("title", ""), page.get("text", "")])
         if quote_in_text(item["quote"], hay):
             verified.setdefault(r["url"], []).append(item)
+        else:
+            dropped.append({"url": r["url"], "reason": "quote not on the page"})
     arts = []
     for r in results:  # the verified quote becomes the stored excerpt, so a re-check against the saved file passes
         items = verified.get(r["url"])
         arts.append({**r, "highlights": ([items[0]["quote"]] if items else []) + list(r.get("highlights", []))})
-    return arts, verified
+    return arts, verified, dropped
+
+
+def event_id(url: str, country: str, typ: str) -> str:
+    """The same id threatstore gives the event."""
+    return hashlib.sha1(f"{url}|{country}|{typ}".encode()).hexdigest()[:10]
 
 
 def store_run(req: dict, arts: list[dict], verified: dict, cost: float | None, extra: dict | None = None) -> int:
-    """Appends one exa_results row and one extractions row per verified URL. Skips URLs already extracted."""
+    """Appends one exa_results row and one extractions row per verified URL. Skips URLs already extracted.
+    New items carry found_at (when Exa found them), so the map can mark what is new."""
     done = {r["url"] for r in ts.read_jsonl(ts.EXTRACTIONS)}
     now = datetime.now(timezone.utc).isoformat(timespec="seconds")
     row = {k: req[k] for k in ("id", "month", "months", "country", "group", "query", "via") if k in req}
@@ -312,11 +378,11 @@ def store_run(req: dict, arts: list[dict], verified: dict, cost: float | None, e
             for url, items in verified.items():
                 if url in done:
                     continue
-                f.write(json.dumps({"url": url, "pv": PV, "items": items, "extracted_at": now, "via": req["via"]},
-                                   ensure_ascii=False) + "\n")
+                items = [{**it, "found_at": now} for it in items]
+                f.write(json.dumps({"url": url, "pv": PV, "items": items, "extracted_at": now, "found_at": now,
+                                    "via": req["via"]}, ensure_ascii=False) + "\n")
                 n += len(items)
-    for fn in (ts._results_index, ts._extracted_count, ts._cached):
-        fn.cache_clear()
+    ts.clear_caches()
     return n
 
 
@@ -324,9 +390,9 @@ _write_lock = threading.Lock()
 
 
 def _res(r) -> dict:
-    return {"url": r.url, "title": getattr(r, "title", None) or "",
-            "published_date": (getattr(r, "published_date", None) or "")[:10],
-            "highlights": list(getattr(r, "highlights", None) or [])}
+    return {"url": _get(r, "url"), "title": _get(r, "title") or "",
+            "published_date": (_get(r, "publishedDate") or _get(r, "published_date") or "")[:10],
+            "highlights": list(_get(r, "highlights") or [])}
 
 
 RAW_DIR = tm.OUT_DIR / "exa_raw"
@@ -347,52 +413,62 @@ def _plain(o):
     return str(o)
 
 
-def save_raw(kind: str, rid: str, req: dict, resp) -> None:
-    """Keeps Exa's full answer (every result, the structured output and its grounding) on disk."""
-    d = RAW_DIR / kind
-    d.mkdir(parents=True, exist_ok=True)
-    name = hashlib.sha1(rid.encode()).hexdigest()[:16] + ".json"
-    (d / name).write_text(json.dumps({"id": rid, "request": {"query": req.get("query"), **req.get("kwargs", {})},
-                                      "response": _plain(resp),
-                                      "fetched_at": datetime.now(timezone.utc).isoformat(timespec="seconds")},
-                                     ensure_ascii=False, indent=1, default=str), encoding="utf-8")
+def _camel(k: str) -> str:
+    a, *b = k.split("_")
+    return a + "".join(x.title() for x in b)
 
 
-def run_search(client, req: dict) -> tuple[int, float, int]:
+def search_body(req: dict) -> dict:
+    """The /search JSON body for a request (camelCase, as the SDK would send it)."""
+    return {"query": req["query"], **{_camel(k): v for k, v in req["kwargs"].items()}}
+
+
+def search_est(req: dict) -> float:
+    n = req["kwargs"].get("num_results", 10)
+    return exacall.PRICE["deep"] + max(0, n - 10) * exacall.PRICE["deep_extra"]
+
+
+def run_search(client, req: dict, run: exacall.Run | None = None, ttl: float | None = None) -> tuple[int, float, int]:
     """One deep (or deep-lite) search -> verified events stored. Returns (events kept, cost, events Exa proposed)."""
-    resp = client.search(req["query"], **req["kwargs"], timeout=120)
-    save_raw("search", req["id"], req, resp)
-    results = [_res(r) for r in resp.results]
-    raw, conf = parse_output(getattr(resp, "output", None))
-    arts, verified = verify_events(client, raw, conf, results, req["country"], req["group"], req["via"])
-    cost = getattr(getattr(resp, "cost_dollars", None), "total", None) or 0.0
+    before = run.spent if run else 0.0
+    resp = exacall.call("search", "/search", search_body(req), search_est(req), run=run, ttl=ttl,
+                        country=req.get("country"), client=client)
+    results = [_res(r) for r in resp.get("results") or []]
+    raw, conf = parse_output(resp.get("output"))
+    arts, verified, _ = verify_events(raw, conf, results, req["country"], req["group"], req["via"], run=run, client=client)
+    cost = (resp.get("costDollars") or {}).get("total") or 0.0
     kept = store_run(req, arts, verified, cost, {"proposed": len(raw)})
-    return kept, cost, len(raw)
+    return kept, (run.spent - before) if run else cost, len(raw)
 
 
 def _done_ids() -> set[str]:
     return {r["id"] for r in ts.read_jsonl(tm.RESULTS)}
 
 
-def run_many(reqs: list[dict], workers: int = 4) -> None:
+def run_many(reqs: list[dict], workers: int = 4, cap: float = 2.0) -> exacall.Run:
+    """Runs searches not stored yet, inside a hard budget (searches + page checks). Prints the ledger after each."""
     from .sources.exa_src import _exa
     client, done = _exa(), _done_ids()
     todo = [r for r in reqs if r["id"] not in done]
-    print(f"{len(reqs) - len(todo)} already stored, {len(todo)} Exa calls to make", flush=True)
+    run = exacall.Run(cap)
+    print(f"{len(reqs) - len(todo)} already stored, {len(todo)} Exa calls to make (run cap ${cap:.2f})", flush=True)
     kept = proposed = 0
-    cost = 0.0
     with ThreadPoolExecutor(workers) as pool:
-        futs = {pool.submit(run_search, client, r): r for r in todo}
+        futs = {pool.submit(run_search, client, r, run): r for r in todo}
         for f in as_completed(futs):
             r = futs[f]
             try:
                 k, c, p = f.result()
+            except exacall.BudgetExceeded as e:
+                print(f"  STOP {r['id']}: {e}", flush=True)
+                continue
             except Exception as e:  # not stored, so the next run retries it
                 print(f"  ERROR {r['id']}: {str(e)[:200]}", flush=True)
                 continue
-            kept, proposed, cost = kept + k, proposed + p, cost + c
-            print(f"  {r['country']:<15} {r['group']:<10} Exa proposed {p:>2}, verified {k:>2}  (${c:.3f})", flush=True)
-    print(f"done: Exa proposed {proposed} events, {kept} passed the quote check, ${cost:.3f}")
+            kept, proposed = kept + k, proposed + p
+            print(f"  {r['country']:<22} {r['group']:<10} Exa proposed {p:>2}, verified {k:>2}  · {exacall.summary(run)}", flush=True)
+    print(f"done: Exa proposed {proposed} events, {kept} passed the quote check · {exacall.summary(run)}")
+    return run
 
 
 # ---------- corroboration: other sites reporting the same event
@@ -418,76 +494,223 @@ def corroborate_plan(max_level: int = 3) -> list[dict]:
     return reqs
 
 
+# ---------- live runs (the map's two buttons): saved, reusable, replayable
+
+def live_file():
+    return tm.OUT_DIR / "live_runs.jsonl"
+
+
+def save_live(kind: str, result: dict) -> None:
+    with _write_lock:
+        with live_file().open("a", encoding="utf-8") as f:
+            f.write(json.dumps({"kind": kind, **result}, ensure_ascii=False) + "\n")
+
+
+def live_runs() -> list[dict]:
+    """Saved live runs; on a deploy without data/, the copy in the snapshot (so a replay still has real runs)."""
+    if live_file().exists():
+        return ts.read_jsonl(live_file())
+    if ts.SNAPSHOT.exists():
+        return ts._snapshot_view(ts._stamp(ts.SNAPSHOT)).get("live_runs", [])
+    return []
+
+
+def last_live(kind: str, country: str | None = None, max_age_s: float | None = None) -> dict | None:
+    """The newest real (not replayed, not reused) run of this kind, optionally for one country and not too old."""
+    best = None
+    for r in live_runs():
+        if r.get("kind") != kind or r.get("status") != "done" or (country and r.get("country") != country):
+            continue
+        if best is None or r.get("finished_at", "") > best.get("finished_at", ""):
+            best = r
+    if best and max_age_s is not None:
+        age = datetime.now(timezone.utc) - datetime.fromisoformat(best["finished_at"])
+        if age.total_seconds() > max_age_s:
+            return None
+    return best
+
+
+def _events_out(verified: dict) -> list[dict]:
+    return [{"id": event_id(u, it["countries"][0], it["type"]), "country": it["countries"][0], "type": it["type"],
+             "layer": it["layer"], "url": u, "quote": it["quote"]} for u, items in verified.items() for it in items]
+
+
+SCHEMA_24H = json.loads(json.dumps(SCHEMA))
+_props = SCHEMA_24H["properties"]["events"]["items"]["properties"]
+_props.pop("kind")
+_props["country"] = {"type": "string", "enum": sorted(ISO2), "description": "the country where it happened"}
+SCHEMA_24H["properties"]["events"]["items"]["required"] = ["url", "quote", "type", "country"]
+LANGS_24H = ["en", "de", "fr", "pl", "it", "es", "nl", "ro", "cs", "sv"]
+SYSTEM_24H = ("You map reports of public institutions or media in Europe being flooded with mass submissions. "
+              "List one event per article and give the country where it happened. Use only what the article says; never guess. "
+              "Quotes are copied verbatim in the original language, never translated. "
+              "Skip opinion pieces, scams aimed at individuals and single complaints.")
+
+
+def last24h_request(now: datetime | None = None) -> dict:
+    """One pan-European deep search over the last 24 h (start rounded down to the hour: two clicks in one hour
+    send the same body, so the second is a $0 cache hit)."""
+    now = (now or datetime.now(timezone.utc)).replace(minute=0, second=0, microsecond=0)
+    start = now - timedelta(hours=24)
+    q = "News that public institutions, schools, courts or media in Europe were flooded with coordinated mass complaints, requests or threat emails"
+    return {"id": f"24h|{start.isoformat(timespec='minutes')}", "via": "exa-24h", "group": "hostile", "query": q,
+            "months": [], "month": _month(now.date()),
+            "kwargs": {"type": "deep", "category": "news", "num_results": 10,
+                       "start_published_date": start.strftime("%Y-%m-%dT%H:%M:%S.000Z"),
+                       "end_published_date": (now + timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%S.000Z"),
+                       "additional_queries": [PHRASES[lg][n % 2] for n, lg in enumerate(LANGS_24H)],
+                       "system_prompt": SYSTEM_24H, "output_schema": SCHEMA_24H,
+                       "contents": {"highlights": {"query": q, "maxCharacters": 600}}}}
+
+
+def known_urls(country: str | None = None) -> list[str]:
+    """URLs already on the map (verified), newest first."""
+    rows = ts.read_jsonl(ts.EXTRACTIONS)
+    out = []
+    for r in reversed(rows):
+        if country and not any(country in it.get("countries", []) for it in r.get("items", [])):
+            continue
+        out.append(r["url"])
+    return list(dict.fromkeys(out))
+
+
+def refresh(on_progress=None, run: exacall.Run | None = None, client=None, max_new: int = 5) -> dict:
+    """'Check the last 24 hours': one deep search, new URLs only, each quote checked on its page."""
+    say = on_progress or (lambda *_a, **_k: None)
+    run = run or exacall.Run(exacall.CLICK_CAP, "click")
+    req = last24h_request()
+    t0 = time.time()
+    say("asking", languages=len(LANGS_24H) + 1)
+    resp = exacall.call("search", "/search", search_body(req), search_est(req), run=run, ttl=3600, client=client)
+    results = [_res(r) for r in resp.get("results") or []]
+    raw, conf = parse_output(resp.get("output"))
+    say("proposed", n=len(raw))
+    known = set(known_urls())
+    n_new = len({pages.norm(e.get("url")) for e in raw} - {pages.norm(u) for u in known})
+    say("checking", n=min(n_new, max_new))
+    arts, verified, dropped = verify_events(raw, conf, results, None, None, req["via"], run=run, client=client,
+                                            max_new=max_new, skip_urls=known)
+    kept = store_run(req, arts, verified, (resp.get("costDollars") or {}).get("total"), {"proposed": len(raw)})
+    out = {"status": "done", "proposed": len(raw), "passed": kept, "dropped": dropped, "events": _events_out(verified),
+           "cost_usd": round(run.spent, 4), "seconds": int(time.time() - t0), "window_start": req["kwargs"]["start_published_date"],
+           "finished_at": datetime.now(timezone.utc).isoformat(timespec="seconds")}
+    say("checked", passed=kept, dropped=len(dropped))
+    save_live("refresh", out)
+    return out
+
+
 # ---------- Exa Agent: an autonomous investigation of one country
 
-def investigate_request(country: str, since: date = date(2025, 1, 1)) -> dict:
-    return {"id": f"agent|{date.today().isoformat()}|{country}", "via": "exa-agent", "country": country,
-            "group": "hostile", "months": _months_between(since, date.today()), "month": _month(date.today()),
-            "query": (f"Find every news report since {since.isoformat()} that public institutions, schools, courts or "
+INVESTIGATE_DAYS = 60
+
+
+def investigate_request(country: str, today: date | None = None) -> dict:
+    today = today or date.today()
+    since = today - timedelta(days=INVESTIGATE_DAYS)
+    return {"id": f"agent|{today.isoformat()}|{country}", "via": "exa-agent", "country": country,
+            "group": "hostile", "months": _months_between(since, today), "month": _month(today),
+            "query": (f"Find news reports published since {since.isoformat()} that public institutions, schools, courts or "
                       f"media in {country} were flooded with coordinated mass complaints, requests, petitions or "
                       f"threat emails. Search in English and in {', '.join(LANGS[country])}. For each, give the article URL "
-                      f"and one sentence copied exactly from it."),
+                      f"and one sentence copied exactly from it. Skip the URLs in the exclusion list: they are already known."),
             "kwargs": {}}
 
 
-def investigate(country: str, on_progress=None, effort: str = "low") -> dict:
-    """Runs an Exa Agent research run and stores whatever passes the quote check."""
+def investigate_body(country: str, effort: str = "low") -> dict:
+    req = investigate_request(country)
+    excl = [{"url": u} for u in known_urls(country)[:100]]
+    body = {"query": req["query"], "systemPrompt": SYSTEM.format(c=country), "outputSchema": SCHEMA, "effort": effort,
+            "metadata": {"app": "lexproof", "country": country}}
+    if excl:
+        body["input"] = {"exclusion": excl}
+    return body
+
+
+def investigate(country: str, on_progress=None, effort: str = "low", run: exacall.Run | None = None, client=None,
+                max_new: int = 10, reuse_s: float = 6 * 3600) -> dict:
+    """'Ask Exa about <country> now': one Agent run (effort low), known URLs excluded, quotes checked on the page.
+    A run for the same country in the last 6 hours is reused at $0."""
     if country not in tm.SCOPE:
         raise ValueError("country not in scope")
-    from .sources.exa_src import _exa
-    client, req = _exa(), investigate_request(country)
-    say = on_progress or (lambda *_: None)
-    run = client.agent.runs.create(query=req["query"], system_prompt=SYSTEM.format(c=country),
-                                   output_schema=SCHEMA, effort=effort,
-                                   metadata={"app": "lexproof", "country": country})
-    say("agent_started", run_id=run.id)
+    say = on_progress or (lambda *_a, **_k: None)
+    prev = last_live("investigate", country, reuse_s)
+    if prev:
+        say("reused", finished_at=prev["finished_at"])
+        return {**prev, "reused": True, "cost_usd": 0.0}
+    run = run or exacall.Run(exacall.CLICK_CAP, "click")
+    req = investigate_request(country)
     t0 = time.time()
-    while run.status in ("queued", "running") and time.time() - t0 < 600:
-        time.sleep(4)
-        run = client.agent.runs.get(run.id)
-        say("agent_" + run.status, seconds=int(time.time() - t0))
-    if run.status != "completed":
-        raise RuntimeError(f"agent run {run.status}: {getattr(run.error, 'message', '') or run.stop_reason}")
-    raw, conf = parse_output(run.output)
-    urls = sorted({e.get("url") for e in raw if str(e.get("url", "")).startswith("http")})
-    say("verifying", proposed=len(raw))
-    pages = fetch_pages(client, urls)
-    results = [{"url": u, "title": pages.get(_norm_url(u), {}).get("title", ""),
-                "published_date": pages.get(_norm_url(u), {}).get("published_date", ""), "highlights": []}
-               for u in urls if _norm_url(u) in pages]
-    arts, verified = verify_events(client, raw, conf, results, country, "hostile", "exa-agent")
-    cost = getattr(run.cost_dollars, "total", None) if run.cost_dollars else None
-    kept = store_run(req, arts, verified, cost, {"proposed": len(raw), "agent_run_id": run.id,
-                                                 "stop_reason": run.stop_reason})
-    return {"country": country, "proposed": len(raw), "verified": kept, "cost_usd": cost, "run_id": run.id,
-            "seconds": int(time.time() - t0)}
+    say("asking", country=country)
+    r = exacall.agent(investigate_body(country, effort), run=run, country=country, on_progress=say, client=client,
+                      max_wait=300)
+    if r.get("status") != "completed":
+        raise RuntimeError(f"Exa Agent run ended as {r.get('status')}")
+    raw, conf = parse_output(r.get("output"))
+    say("proposed", n=len(raw))
+    known = set(known_urls(country))
+    lay = lambda e: "precursor" if e.get("type") == "AI" else "hostile"
+    usable = [e for e in raw if e.get("quote") and to_item(e, country, lay(e), "exa-agent", None)]   # no page call for a dud
+    urls = [u for u in dict.fromkeys(e.get("url") for e in usable) if str(u or "").startswith("http")]
+    new = [u for u in urls if pages.norm(u) not in {pages.norm(k) for k in known}][:max_new]
+    say("checking", n=len(new))
+    quotes = {}
+    for e in raw:
+        if e.get("url") in new and e.get("quote"):
+            quotes.setdefault(e["url"], e["quote"])
+    got = pages.get(new, quotes, run=run, client=client)
+    results = [{"url": u, "title": got[pages.norm(u)].get("title", ""),
+                "published_date": got[pages.norm(u)].get("published_date", ""), "highlights": []}
+               for u in new if pages.norm(u) in got]
+    arts, verified, dropped = verify_events(raw, conf, results, country, None, "exa-agent", run=run, client=client,
+                                            skip_urls=known)
+    kept = store_run(req, arts, verified, (r.get("costDollars") or {}).get("total"),
+                     {"proposed": len(raw), "agent_run_id": r.get("id"), "stop_reason": r.get("stopReason")})
+    out = {"status": "done", "country": country, "proposed": len(raw), "passed": kept, "dropped": dropped,
+           "events": _events_out(verified), "cost_usd": round(run.spent, 4), "run_id": r.get("id"),
+           "seconds": int(time.time() - t0), "finished_at": datetime.now(timezone.utc).isoformat(timespec="seconds")}
+    say("checked", passed=kept, dropped=len(dropped))
+    save_live("investigate", out)
+    return out
 
 
 def dry_run() -> None:
-    plan = sweep_plan()
-    print(f"DRY RUN. {len(plan)} deep searches would run (~$0.017 each = ~${0.017 * len(plan):.2f}), e.g.:")
-    r = plan[0]
-    print(json.dumps({k: v for k, v in r["kwargs"].items() if k != "output_schema"}, ensure_ascii=False, indent=1))
+    plan = incremental_plan()
+    print(f"DRY RUN. {len(plan)} incremental deep searches would run now, e.g.:")
+    if plan:
+        r = plan[0]
+        print(r["id"], json.dumps({k: v for k, v in r["kwargs"].items() if k != "output_schema"}, ensure_ascii=False, indent=1))
     print(f"\n{len(corroborate_plan())} corroboration searches would run on current events.")
+    print(exacall.summary())
 
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--sweep", action="store_true")
+    ap.add_argument("--sweep", action="store_true", help="back-fill since --since")
+    ap.add_argument("--incremental", action="store_true", help="only since the last successful run per country/layer")
     ap.add_argument("--corroborate", action="store_true")
     ap.add_argument("--investigate", metavar="COUNTRY")
+    ap.add_argument("--refresh", action="store_true", help="the last 24 hours, all of Europe")
     ap.add_argument("--country", action="append")
     ap.add_argument("--layer", choices=["hostile", "precursor"])
     ap.add_argument("--since", default="2025-01")
+    ap.add_argument("--cap", type=float, default=1.0, help="hard Exa budget for this run, $")
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args()
+    layers = [a.layer] if a.layer else ("hostile", "precursor")
     if a.sweep:
-        run_many(sweep_plan(a.country, [a.layer] if a.layer else ("hostile", "precursor"),
-                            date.fromisoformat(a.since + "-01")))
+        run_many(sweep_plan(a.country, layers, date.fromisoformat(a.since + "-01")), cap=a.cap)
+    elif a.incremental:
+        run_many(incremental_plan(a.country, layers), cap=a.cap)
     elif a.corroborate:
-        run_many(corroborate_plan())
+        run_many(corroborate_plan(), cap=a.cap)
     elif a.investigate:
-        print(investigate(a.investigate, lambda s, **k: print(" ", s, k, flush=True)))
+        print(json.dumps(investigate(a.investigate, lambda s, **k: print(" ", s, k, flush=True),
+                                     run=exacall.Run(min(a.cap, exacall.CLICK_CAP))), ensure_ascii=False, indent=1))
+        print(exacall.summary())
+    elif a.refresh:
+        print(json.dumps(refresh(lambda s, **k: print(" ", s, k, flush=True),
+                                 run=exacall.Run(min(a.cap, exacall.CLICK_CAP))), ensure_ascii=False, indent=1))
+        print(exacall.summary())
     elif a.dry_run:
         dry_run()
     else:
