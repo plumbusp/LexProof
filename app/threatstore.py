@@ -131,7 +131,9 @@ def _snapshot_view(stamp: float) -> dict:
 def _view() -> dict:
     """Raw local files if this machine has them, else the committed snapshot, else nothing."""
     if tm.RESULTS.exists():
-        return _raw_view()
+        raw = _raw_view()
+        if raw["coverage"] or not SNAPSHOT.exists():  # a deploy's stray/empty raw file must not hide the snapshot
+            return raw
     if SNAPSHOT.exists():
         return _snapshot_view(_stamp(SNAPSHOT))
     return {"events": [], "coverage": {}, "saved_at": "", "articles": 0, "extracted": 0}
