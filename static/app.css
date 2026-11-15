@@ -402,7 +402,8 @@ body[data-view="home"] .topbar { background: color-mix(in srgb, var(--panel) 70%
 /* "UK view · Demo": the top bar's black DEMO tag, same font and colours */
 .ws-tag { margin-left: 0; }
 .map-title-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
-.map-title-row .flow-arrow { font-size: 28px; color: var(--text); animation: arrow-nudge 2.2s ease-in-out infinite; }
+.map-title-aside { display: inline-flex; align-items: center; gap: 10px; }
+.map-title-row .flow-arrow { flex: none; font-size: 28px; color: var(--text); animation: arrow-nudge 2.2s ease-in-out infinite; }
 @keyframes arrow-nudge { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(5px); } }
 @media (prefers-reduced-motion: reduce) { .map-title-row .flow-arrow { animation: none; } }
 .map-title-note { font: 500 14px/1.3 var(--sans, inherit); color: var(--text-2); max-width: 34ch; }
