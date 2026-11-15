@@ -517,3 +517,6 @@ body[data-view="home"] .topbar { background: color-mix(in srgb, var(--panel) 70%
 .new-badge rect { fill: var(--hl-exa); }
 .new-badge text { fill: var(--panel); font: 700 8px var(--mono); letter-spacing: .04em; }
 @media (prefers-reduced-motion: reduce) { .new-ring { animation: none; } }
+
+/* AI letter generation switched off for the demo; the tooltip (title) explains why */
+.gen-off, .gen-off:hover { opacity: .5; cursor: not-allowed; filter: grayscale(1); }

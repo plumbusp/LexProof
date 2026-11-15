@@ -62,7 +62,8 @@ def test_api():
     assert [x["code"] for x in opts["countries"]] == ["UK"]
     assert all(a["short"] and a["name"] and len(a["presets"]) == 2 for a in opts["areas"])
     assert c.post("/api/generate", json={"area": "sar", "preset": "sar-2"}).json()["title"] == "CCTV and a parking fine"
-    assert c.post("/api/generate", json={"area": "sar", "country": "DE"}).status_code == 400
+    assert c.post("/api/generate", json={"area": "sar", "country": "DE", "preset": "sar-2"}).status_code == 400
+    assert c.post("/api/generate", json={"area": "sar"}).status_code == 403  # AI generation is off in the demo
     assert c.get("/api/sample").status_code == 404
 
 

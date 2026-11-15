@@ -219,7 +219,7 @@
     $("#gen-body").dataset.mode = mode;
     document.querySelectorAll(".gen-mode").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.mode === mode)));
   }
-  document.querySelectorAll(".gen-mode").forEach((b) => (b.onclick = () => genMode(b.dataset.mode)));
+  document.querySelectorAll(".gen-mode").forEach((b) => (b.onclick = () => { if (!b.classList.contains("gen-off")) genMode(b.dataset.mode); }));
   const areaName = (a) => `${a.short} (${a.name})`;
   function genSelect(id) {
     genArea = genAreasList.find((a) => a.id === id) || genAreasList[0];
@@ -242,7 +242,7 @@
     if (b && !b.disabled) genSelect(b.dataset.area);
   });
   async function genLetter(preset) {
-    const name = areaName(genArea), busy = document.querySelectorAll(".gen-area, .gen-preset, #btn-gen-ai");
+    const name = areaName(genArea), busy = document.querySelectorAll(".gen-area, .gen-preset");
     busy.forEach((x) => (x.disabled = true));
     if (!preset) genStatus(`<span class="spin"></span>Writing a new ${esc(name)} letter…`);
     try {
@@ -263,7 +263,8 @@
     }
     busy.forEach((x) => (x.disabled = false));
   }
-  $("#btn-gen-ai").onclick = () => genLetter(null);
+  // AI generation is switched off for the demo (API request limits): only the samples work.
+  $("#btn-gen-ai").onclick = (e) => e.preventDefault();
   $("#gen-presets").addEventListener("click", (e) => {
     const b = e.target.closest(".gen-preset");
     if (b && !b.disabled) genLetter(b.dataset.preset);

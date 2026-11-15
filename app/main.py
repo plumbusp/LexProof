@@ -65,6 +65,8 @@ def generate_options():
 
 @app.post("/api/generate")
 def generate_letter(req: GenerateRequest):
+    if not req.preset:  # AI generation is off for the demo (API request limits); samples only
+        raise HTTPException(403, "AI letter generation is disabled in this demo (API request limits). Use a sample letter.")
     try:
         return generate.generate(req.area, req.country, req.preset)
     except ValueError as e:

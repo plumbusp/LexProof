@@ -144,7 +144,7 @@
       <div class="gen-modes">
         <button class="btn gen-btn gen-mode" id="btn-samples" type="button" data-mode="samples" aria-pressed="true" aria-controls="gen-body">
           <span class="icon">description</span><span class="gen-btn-label">Use samples</span><span class="gen-wait">no wait</span></button>
-        <button class="btn gen-btn gen-mode" id="btn-gen" type="button" data-mode="ai" aria-pressed="false" aria-controls="gen-body">
+        <button class="btn gen-btn gen-mode gen-off" id="btn-gen" type="button" data-mode="ai" aria-pressed="false" aria-controls="gen-body" aria-disabled="true" title="Disabled: demo API request limits at Junction. Use the sample letters.">
           <span class="icon">auto_awesome</span><span class="gen-btn-label">Generate complaint</span><span class="gen-wait">wait ~10 s</span></button>
       </div>
     </div>
@@ -170,7 +170,7 @@
       <div class="gen-row">
         <span class="gen-label">Letter</span>
         <div class="gen-actions">
-          <button class="btn primary gen-btn" id="btn-gen-ai" type="button" title="A new letter written by AI">
+          <button class="btn primary gen-btn gen-off" id="btn-gen-ai" type="button" aria-disabled="true" title="Disabled: demo API request limits at Junction. Use the sample letters.">
             <span class="icon">auto_awesome</span><span class="gen-btn-label">Write the letter</span><span class="gen-wait">wait ~10 s</span></button>
           <div class="gen-presets" id="gen-presets"></div>
         </div>
