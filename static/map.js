@@ -1,8 +1,8 @@
 // Regional Abuse Map, UK view. Reads /api/threatmap?layer=relevance, which serves saved data only (no live fetching).
 // Changing the layer, the month range or the type chips just asks the server for another slice.
 (() => {
-  // EU-27 + UK + Switzerland by ISO 3166 numeric id (as in world-atlas).
-  // Ukraine, Kosovo, Serbia and Moldova are deliberately not drawn (plan rule 4).
+  // Geographic Europe in the data (42 countries) by ISO 3166 numeric id (as in world-atlas).
+  // Same list as app/threatmap.py SCOPE (plan rule 4).
   const SCOPE = {
     "040": "Austria", "056": "Belgium", "100": "Bulgaria", "191": "Croatia", "196": "Cyprus",
     "203": "Czechia", "208": "Denmark", "233": "Estonia", "246": "Finland", "250": "France",
@@ -10,7 +10,19 @@
     "428": "Latvia", "440": "Lithuania", "442": "Luxembourg", "470": "Malta", "528": "Netherlands",
     "616": "Poland", "620": "Portugal", "642": "Romania", "703": "Slovakia", "705": "Slovenia",
     "724": "Spain", "752": "Sweden", "826": "United Kingdom", "756": "Switzerland",
+    "578": "Norway", "352": "Iceland", "438": "Liechtenstein", "020": "Andorra", "492": "Monaco",
+    "674": "San Marino", "336": "Vatican", "688": "Serbia", "070": "Bosnia and Herzegovina",
+    "499": "Montenegro", "807": "North Macedonia", "008": "Albania", "498": "Moldova",
   };
+  const SCOPE_ID = Object.fromEntries(Object.entries(SCOPE).map(([id, name]) => [name, id]));
+  // Pieces world-atlas draws apart, shown and clicked as their country (world-atlas id or name -> country).
+  const ALIAS = {
+    "248": "Finland", "234": "Denmark", "833": "United Kingdom", "832": "United Kingdom", "831": "United Kingdom",
+    "N. Cyprus": "Cyprus",
+  };
+  // Geographic Europe outside the data: drawn grey, never clickable, no dots (id or name -> label).
+  const NOT_COVERED = { "804": "Ukraine", "643": "Russia", "112": "Belarus", "792": "Turkey", "Kosovo": "Kosovo" };
+  const MICRO = 40; // px²: a country smaller than this on screen also gets a clickable dot
   const LIBS = [
     "https://cdn.jsdelivr.net/npm/d3-array@3.2.4/dist/d3-array.min.js",
     "https://cdn.jsdelivr.net/npm/d3-geo@3.1.1/dist/d3-geo.min.js",
@@ -19,7 +31,10 @@
   const SHAPES = "https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-50m.json";
   const W = 800, H = 760, NS = "http://www.w3.org/2000/svg";
   // Shown by name only. The codes (T3, T5, T6) stay in the data; they come from the plan's taxonomy, where T1, T2 and T4 are unused.
-  const TYPE_NAMES = { T3: "Mass complaints", T5: "Threat emails", T6: "Media targets", AI: "AI complaints" };
+  // Named after the header's two words: threat floods and complaint floods.
+  const TYPE_NAMES = { T3: "Coordinated complaints", T5: "Threat emails", T6: "Newsroom floods", AI: "AI-written complaints" };
+  const CHIP_GROUPS = [["Threat floods", ["T5", "T3", "T6"]], ["Complaint floods", ["AI"]]];
+  const UK = "United Kingdom";
 
   // Relevance to the UK, 1-5. Set by fixed rules in app/relevance.py from facts; never by AI.
   const REL = {
@@ -93,38 +108,59 @@
 
   // ---------- drawing the base map (once)
   function draw(topo) {
-    const feats = topojson.feature(topo, topo.objects.countries).features.filter((f) => SCOPE[f.id]);
+    const feats = topojson.feature(topo, topo.objects.countries).features;
     // Frame mainland Europe so overseas territories (e.g. French Guiana) do not shrink the map.
     const frame = { type: "MultiPoint", coordinates: [[-11, 35], [-11, 66], [34, 71], [34, 34], [12, 34], [12, 71]] };
-    const projection = d3.geoAzimuthalEqualArea().rotate([-10, -52]).fitExtent([[12, 12], [W - 12, H - 12]], frame);
+    // clipAngle keeps the far side of the globe from wrapping round the rim; clipExtent cuts shapes at the frame.
+    const projection = d3.geoAzimuthalEqualArea().rotate([-10, -52]).clipAngle(90)
+      .fitExtent([[12, 12], [W - 12, H - 12]], frame).clipExtent([[0, 0], [W, H]]);
     const path = d3.geoPath(projection);
     const svg = document.createElementNS(NS, "svg");
     svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
     svg.setAttribute("role", "group");
-    svg.setAttribute("aria-label", "Map of the EU, the UK and Switzerland");
+    svg.setAttribute("aria-label", "Map of Europe");
     svg.innerHTML = `<defs><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
       <rect class="hatch-bg" width="6" height="6"></rect><line class="hatch-line" x1="0" y1="0" x2="0" y2="6"></line></pattern></defs>`;
-    const shapes = document.createElementNS(NS, "g");
+    const back = document.createElementNS(NS, "g"), shapes = document.createElementNS(NS, "g"), micro = document.createElementNS(NS, "g");
+    back.setAttribute("class", "land-layer");
+    const titled = (el, text) => { const t = document.createElementNS(NS, "title"); t.textContent = text; el.appendChild(t); return el; };
     for (const f of feats) {
       const d = path(f);
-      if (!d) continue;
+      if (!d) continue; // outside the frame
+      const nm = f.properties && f.properties.name, own = SCOPE[f.id], name = own || ALIAS[f.id] || ALIAS[nm];
       const p = document.createElementNS(NS, "path");
       p.setAttribute("d", d);
+      if (!name) { // never class "country": render() looks every .country up in data.countries
+        const out = NOT_COVERED[f.id] || NOT_COVERED[nm];
+        p.setAttribute("class", out ? "land-out" : "land-bg");
+        back.appendChild(titled(p, out ? `${out}: Not covered in this demo` : "Outside the map's scope"));
+        continue;
+      }
       p.setAttribute("class", "country ns");
-      p.setAttribute("tabindex", "0");
-      p.setAttribute("role", "button");
-      p.dataset.id = f.id;
+      p.dataset.id = SCOPE_ID[name]; // pieces (Åland, Faroe, N. Cyprus...) select their country
+      if (own) { p.setAttribute("tabindex", "0"); p.setAttribute("role", "button"); }
       p.appendChild(document.createElementNS(NS, "title"));
       shapes.appendChild(p);
+      if (!own) continue; // dots stay on the country's own main piece
       // marker position: centre of the biggest piece, so France is not pulled towards Guiana
       const polys = f.geometry.type === "MultiPolygon" ? f.geometry.coordinates.map((c) => ({ type: "Polygon", coordinates: c })) : [f.geometry];
       const main = polys.reduce((a, b) => (d3.geoArea(b) > d3.geoArea(a) ? b : a));
-      centroids[SCOPE[f.id]] = path.centroid(main);
+      const at = (centroids[own] = path.centroid(main));
+      if (path.area(f) < MICRO && at.every(Number.isFinite)) { // microstates: a dot you can click, on top of neighbours
+        p.removeAttribute("tabindex"); p.removeAttribute("role");
+        const c = document.createElementNS(NS, "circle");
+        c.setAttribute("cx", at[0]); c.setAttribute("cy", at[1]); c.setAttribute("r", 4);
+        c.setAttribute("class", "country ns");
+        c.setAttribute("tabindex", "0"); c.setAttribute("role", "button");
+        c.dataset.id = f.id;
+        c.appendChild(document.createElementNS(NS, "title"));
+        micro.appendChild(c);
+      }
     }
     const markers = document.createElementNS(NS, "g");
     markers.setAttribute("id", "markers");
     markers.setAttribute("pointer-events", "none");
-    svg.append(shapes, markers);
+    svg.append(back, shapes, micro, markers);
     svg.addEventListener("click", (e) => { const p = e.target.closest(".country"); if (p) select(SCOPE[p.dataset.id]); });
     svg.addEventListener("keydown", (e) => {
       const p = e.target.closest(".country");
@@ -158,9 +194,10 @@
       if (n) g.append(marker("circle", at[0], at[1], n));
       if (media) g.append(marker("diamond", at[0] + (n ? 16 : 0), at[1] + (n ? 6 : 0), media));
     }
-    const behind = data.extracted < data.articles ? ` Reading articles: ${data.extracted} of ${data.articles} done, so this is incomplete.` : "";
-    $("#map-status").textContent = `${data.n_events} report${data.n_events === 1 ? "" : "s"} · ${monthName(data.from)} to ${monthName(data.to)} · ${data.searched_months.length} month${data.searched_months.length === 1 ? "" : "s"} searched.` + behind;
-    $("#map-foot").textContent = `Saved news, fetched up to ${data.saved_at ? dayName(data.saved_at) : "an unknown date"}. Reported or warned, not proven attack. Levels are set by fixed rules, not by AI.`;
+    const span = data.from === data.to ? monthName(data.from) : `${monthName(data.from)} to ${monthName(data.to)}`;
+    const sites = data.sites ? ` from ${data.sites} news site${data.sites === 1 ? "" : "s"}` : "";
+    $("#map-status").textContent = `${data.n_events} report${data.n_events === 1 ? "" : "s"}${sites} · ${span} · every quote checked on the source page.`;
+    $("#map-foot").textContent = `Exa searches the web for these reports${data.saved_at ? `; last run ${dayName(data.saved_at)}` : ""}. AI gives facts. Fixed rules set the level. Reported or warned, not a proven attack.`;
     renderTiers();
     renderSide();
   }
@@ -183,24 +220,41 @@
     $("#map-to").innerHTML = opts(data.to);
     document.querySelectorAll(".seg-btn").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.layer === layer)));
     const on = types === null ? data.types : types;
-    $("#map-chips").innerHTML = data.types.map((t) => `<button type="button" class="chip-btn" data-type="${esc(t)}" aria-pressed="${on.includes(t)}">${esc(TYPE_NAMES[t] || t)}</button>`).join("");
+    const chip = (t) => `<button type="button" class="chip-btn" data-type="${esc(t)}" aria-pressed="${on.includes(t)}">${esc(TYPE_NAMES[t] || t)}</button>`;
+    const grouped = CHIP_GROUPS.flatMap(([, ts]) => ts);
+    $("#map-chips").innerHTML = CHIP_GROUPS.map(([label, ts]) => {
+      const here = ts.filter((t) => data.types.includes(t));
+      return here.length ? `<span class="chip-group"><span class="chip-label">${esc(label)}</span>${here.map(chip).join("")}</span>` : "";
+    }).join("") + data.types.filter((t) => !grouped.includes(t)).map(chip).join("");
     $("#map-chips").hidden = !data.types.length;
   }
 
   function renderLegend() {
-    $("#legend").innerHTML = `<span class="legend-item" title="${esc(COUNTRY_NONE)}"><span class="sw sw-hatch"></span>No reports</span>`
-      + [1, 2, 3, 4, 5].map((n) => `<span class="legend-item" title="${esc(REL[n].why)}"><span class="sw r${n}"></span>${n} · ${esc(REL[n].name)}</span>`).join("")
-      + `<span class="legend-item"><span class="sw sw-ns"></span>not searched</span>`
-      + `<span class="legend-item"><span class="sw-dot">n</span>reports</span>`;
+    const unsearched = Object.values(data.countries).some((c) => !c.searched);
+    $("#legend").innerHTML = [5, 4, 3, 2, 1].map((n) => `<span class="legend-item" title="${esc(REL[n].why)}"><span class="sw r${n}"></span>${n} · ${esc(REL[n].name)}</span>`).join("")
+      + `<span class="legend-item" title="${esc(COUNTRY_NONE)}"><span class="sw sw-hatch"></span>No reports found (not proof of safety)</span>`
+      + (unsearched ? `<span class="legend-item"><span class="sw sw-ns"></span>Not searched in this window</span>` : "")
+      + `<span class="legend-item"><span class="sw sw-out"></span>Not covered in this demo</span>`
+      + `<span class="legend-item"><span class="sw-dot">2</span>Number of reports</span>`
+      + `<span class="legend-item"><span class="sw-dia"></span>Reports about newsrooms</span>`;
   }
 
   // ---------- side panel
   function select(name) { selected = name; showAll = false; render(); }
 
+  // Raw titles often end in the site's name ("... | krone.at", "... - BBC News"): drop that tail.
+  function cleanTitle(t, dom) {
+    let s = String(t || "").replace(/\s+\|\s+[^|]{1,40}$/, "");
+    const m = s.match(/\s+[-–—]\s+([^-–—]{1,30})$/);
+    const base = String(dom || "").replace(/^www\./, "").split(".")[0].toLowerCase();
+    if (m && (m[1].includes(".") || (base.length > 2 && m[1].toLowerCase().replace(/\s+/g, "").includes(base)))) s = s.slice(0, m.index);
+    return s.trim() || String(t || "");
+  }
+
   // Card: date + relevance + kind / headline / 2-3 line Exa summary / why (max 4) / agent check / quote / source.
   function eventCard(e) {
     const r = e.rel || 1, kind = FLOOD[e.type] || "threat";
-    const headline = e.headline || e.title_en || e.title || e.target || "Untitled report";
+    const headline = e.headline || cleanTitle(e.title_en || e.title, e.domain) || e.target || "Untitled report";
     const fx = e.rel_facts || {};
     const agent = fx.note && e.country !== "United Kingdom"
       ? `<div class="ev-agent fine"><b>Exa Agent:</b> ${esc(fx.note)}${fx.evidence_url ? ` <a href="${esc(fx.evidence_url)}" target="_blank" rel="noopener noreferrer">UK source<span class="icon">open_in_new</span></a>` : ""}</div>` : "";
@@ -234,13 +288,23 @@
   function renderSide() {
     const side = $("#map-side");
     if (!selected) {
-      const top = data.top || [];
-      side.innerHTML = `<div class="section-head"><div><h2>What matters for the UK now</h2><div class="section-sub">Reports at level 4 and 5 in this window. Select a country on the map to see all its reports.</div></div></div>
-        <div class="ev-list">${top.length ? top.map(eventCard).join("") : `<div class="empty">Nothing at level 4 or 5 in this window.</div>`}</div>`;
+      // Two groups: what is hitting the UK now, and waves abroad that an Exa Agent found already reached the UK.
+      const all = Object.values(data.countries).flatMap((c) => c.events);
+      const newest = (a, b) => (a.date_start < b.date_start ? 1 : -1);
+      const here = all.filter((e) => e.country === UK && e.rel === 5).sort(newest);
+      const abroad = all.filter((e) => e.country !== UK && e.rel === 4).sort(newest);
+      const cap = showAll ? Infinity : 6;
+      const group = (title, sub, evs, none) => `<div class="ev-group"><h3>${esc(title)}</h3><p class="fine">${esc(sub)}</p></div>`
+        + (evs.length ? evs.slice(0, cap).map(eventCard).join("") : `<div class="empty">${esc(none)}</div>`);
+      const more = !showAll && (here.length > cap || abroad.length > cap);
+      side.innerHTML = `<div class="section-head"><div><h2>What matters for the UK now</h2><div class="section-sub">Click a country on the map to see all its reports.</div></div></div>
+        <div class="ev-list">${group("In the UK now", "Level 5 · Act now: hitting UK councils, schools or services.", here, "Nothing at level 5 in this window.")}
+        ${group("Abroad, already reached the UK", "Level 4 · Prepare: the same wave was also reported in the UK (source checked).", abroad, "Nothing at level 4 abroad in this window.")}</div>
+        ${more ? `<button class="btn more" type="button" id="more">Show all ${here.length + abroad.length}</button>` : ""}`;
       return;
     }
     const c = data.countries[selected], evs = c.events, shown = showAll ? evs : evs.slice(0, 8);
-    side.innerHTML = `<div class="section-head"><div><button type="button" class="linkish back" id="map-back">← What matters for the UK</button><h2>${esc(selected)}</h2><div class="section-sub">${esc(countryText(selected, c))}</div></div></div>
+    side.innerHTML = `<div class="section-head"><div><button type="button" class="linkish back" id="map-back">← Back to what matters for the UK</button><h2>${esc(selected)}</h2><div class="section-sub">${esc(countryText(selected, c))}</div></div></div>
       <div class="ev-list">${evs.length ? shown.map(eventCard).join("") : `<div class="empty">${c.searched ? "No reports with a source and a quote in this window. Nothing found is not the same as safe." : "This country was not searched in this window."}</div>`}</div>
       ${evs.length > shown.length ? `<button class="btn more" type="button" id="more">Show all ${evs.length}</button>` : ""}`;
   }

@@ -31,7 +31,7 @@ def test_level_4_needs_named_state_and_two_domains():
 def test_no_source_no_dot_and_scope():  # acceptance 4 and 6
     assert not tm.valid(ev(quote=""))
     assert not tm.valid(ev(url=""))
-    assert not tm.valid(ev(country="Serbia"))
+    assert not tm.valid(ev(country="Ukraine"))
     assert not tm.valid(ev(is_event=False))
 
 
@@ -56,5 +56,15 @@ def test_monthly_plan_covers_jan_2024_to_today_once_per_country():
     assert len(ms) == 35 and ms[0] == (date(2024, 1, 1), date(2024, 1, 31))
     assert ms[1][1] == date(2024, 2, 29) and ms[-1] == (date(2026, 11, 1), date(2026, 11, 14))
     plan = tm.build_plan("countries", today=date(2026, 11, 14))
-    assert len(plan) == 35 * 29 * 2 and len({r["id"] for r in plan}) == len(plan)
-    assert not any(c in r["query"] for r in plan for c in ("Serbia", "Ukraine", "Kosovo", "Moldova"))
+    assert len(plan) == 35 * 42 * 2 and len({r["id"] for r in plan}) == len(plan)
+    assert not any(c in r["query"] for r in plan for c in ("Ukraine", "Russia", "Belarus", "Turkey", "Kosovo"))
+
+
+def test_every_scope_country_has_iso2_langs_and_phrases():
+    from app import threatdeep as td
+    assert len(tm.SCOPE) == 42
+    assert not {"Ukraine", "Russia", "Belarus", "Turkey", "Kosovo"} & tm.SCOPE
+    assert tm.SCOPE <= td.ISO2.keys() and tm.SCOPE <= td.LANGS.keys()
+    for c in tm.SCOPE:
+        assert td.LANGS[c] and all(len(td.PHRASES[lang]) == 3 for lang in td.LANGS[c])
+        assert all(len(td.additional_queries(c, lay)) <= 10 for lay in ("hostile", "precursor"))

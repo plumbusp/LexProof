@@ -71,7 +71,7 @@ def test_exa_run_without_a_key_stores_nothing(store, monkeypatch):
 
 def test_month_filter_of_the_plan_is_exact():
     p = tm.build_plan("countries")
-    assert {r["month"] for r in p if r["month"] == "2026-10"} == {"2026-10"} and len([r for r in p if r["month"] == "2026-10"]) == 58
+    assert {r["month"] for r in p if r["month"] == "2026-10"} == {"2026-10"} and len([r for r in p if r["month"] == "2026-10"]) == 84
 
 
 # ---------- Gemini: verification, bad output, resume
@@ -97,7 +97,7 @@ def articles(*titles):
 
 def test_batch_keeps_only_verified_items_and_survives_junk(monkeypatch):
     monkeypatch.setattr(tx, "settings", SimpleNamespace(ai_model="m"))
-    junk = [raw(1), raw(1, quote="invented, not in the text"), raw(2, type="T9"), raw(7), "not a dict", raw(2, countries=["Serbia"])]
+    junk = [raw(1), raw(1, quote="invented, not in the text"), raw(2, type="T9"), raw(7), "not a dict", raw(2, countries=["Ukraine"])]
     rows, n_raw = tx.extract_batch(fake_client(lambda _: reply(*junk)), articles("one", "two"))
     assert n_raw == 6 and [len(r["items"]) for r in rows] == [1, 0]
     assert rows[0]["url"] == "https://x.test/1" and rows[0]["pv"] == tx.PV and rows[0]["items"][0]["countries"] == ["Italy"]

@@ -24,16 +24,23 @@ def view():
             "capabilities": {"exa": settings.exa_enabled, "ai": settings.ai_enabled}}
 
 
-def _refs(text, warnings):
-    """Returns (references, asks, extractor)."""
+AI_FAILED = "AI reading was unavailable, so explicit references were found by pattern rules."
+AI_OFF = "AI reading is off, so explicit references were found by pattern rules."
+EXA_OFF = "Exa is not set up, so laws the letter does not name, or names wrongly, can't be looked up."
+
+
+def _refs(text, warnings, log):
+    """Returns (references, asks, extractor). The officer sees a short line in warnings;
+    the raw provider error (429, quota, ...) is kept in log, saved with the job."""
     if settings.ai_enabled:
         try:
             r = ai.extract(text)
             return [x.model_dump() for x in r.references], r.asks[:3], "Gemini"
         except Exception as e:
-            warnings.append(f"{e} - using the rule-based fallback")
+            log.append(f"Gemini extraction failed: {type(e).__name__}: {str(e)[:500]}")
+            warnings.append(AI_FAILED)
     else:
-        warnings.append("No Gemini key: rule-based fallback finds explicit references only.")
+        warnings.append(AI_OFF)
     refs = []
     for c in rule_extract(text):
         clause = text[c.clause_span[0]:c.clause_span[1]].strip()
@@ -94,17 +101,17 @@ def draft_reply(received: date, rows, dls, rtype, name) -> str:
 
 
 def run(text: str, params: dict, progress=lambda step, **kw: None) -> dict:
-    t0, warnings = time.time(), []
+    t0, warnings, log = time.time(), [], []
     try:
         received = date.fromisoformat(params.get("received_date") or "")
     except ValueError:
         received = date.today()
     if not settings.exa_enabled:
-        warnings.append("No Exa key: unknown laws, 404s and implicit claims can't be looked up.")
+        warnings.append(EXA_OFF)
 
-    progress("Reading the letter for legal references" + (" with Gemini" if settings.ai_enabled else " (rule-based)"),
+    progress("Reading the letter for legal references" + (" with Gemini" if settings.ai_enabled else " with pattern rules (no AI)"),
              stage="read")
-    refs, asks, extractor = _refs(text, warnings)
+    refs, asks, extractor = _refs(text, warnings, log)
 
     rtype = request_type(text)
     hint = {"FOI": "Freedom of Information Act 2000, public authority", "EIR": "Environmental Information Regulations 2004",
@@ -158,7 +165,7 @@ def run(text: str, params: dict, progress=lambda step, **kw: None) -> dict:
         "deadlines": dls,
         "draft_reply": draft_reply(received, rows, dls, rtype, requester_name(text)),
         "view": view(),
-        "meta": {"seconds": round(time.time() - t0, 1), "warnings": warnings, "extractor": extractor},
+        "meta": {"seconds": round(time.time() - t0, 1), "warnings": warnings, "extractor": extractor, "log": log},
     }
 
 

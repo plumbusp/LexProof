@@ -12,7 +12,7 @@ Exa is how LexProof reads the web. Every dot on the Regional Abuse Map and every
 |---|---|---|---|
 | **Search** | `/search`, `type="auto"`, `include_domains=["legislation.gov.uk"]`, `contents.highlights` | `app/check.py` (letter checker) | The official page for a law the letter cites or hints at. The section text is then fetched from the legislation.gov.uk API. |
 | **News search with date filters** | `/search`, `category="news"`, `start_published_date` / `end_published_date`, `contents.highlights` | `app/threatmap.py --run` | 406 monthly searches (Apr–Oct 2026): 2,714 news articles for the map. Gemini reads the excerpts into events. |
-| **Deep Search with structured output** | `/search`, `type="deep"`, `output_schema`, `additional_queries` (the country's own languages), `user_location` (the country), `system_prompt`, `category="news"`, dates since Jan 2025 | `app/threatdeep.py --sweep` | 58 searches (29 countries × 2 layers). Exa returns ready-made events: URL, date, type, target, who calls it hostile, who is blamed, and an exact quote, plus grounding with a confidence level per field. 269 proposed, 233 kept. |
+| **Deep Search with structured output** | `/search`, `type="deep"`, `output_schema`, `additional_queries` (the country's own languages), `user_location` (the country), `system_prompt`, `category="news"`, dates since Jan 2025 | `app/threatdeep.py --sweep` | 58 searches (29 countries × 2 layers; the 13 countries added later, Norway to Moldova, need 26 more). Exa returns ready-made events: URL, date, type, target, who calls it hostile, who is blamed, and an exact quote, plus grounding with a confidence level per field. 269 proposed, 233 kept. |
 | **Contents: full text** | `/contents`, `text` | `app/threatdeep.py` (check step), `app/threatenrich.py` | The whole article. Code checks that each event's quote is really on the page. No quote on the page means no dot. |
 | **Contents: highlights with a query** | `/contents`, `highlights.query = the event's quote` | `app/threatenrich.py` | The paragraph around the quote on the real page (saved as `context`). |
 | **Contents: summary with a query** | `/contents`, `summary.query = "In 2-3 short sentences in English: what happened, where, ..."` | `app/threatenrich.py` | A 2–3 line English summary per article, shown on each card as "Summary by Exa". It also translates: most articles are not in English. |
@@ -46,7 +46,7 @@ All of it lives under `data/threatmap/`, which is gitignored: it is paid data an
 | Run | Calls | Cost |
 |---|---|---|
 | Monthly news search (Apr–Oct 2026) | 406 | $2.44 |
-| Deep Search sweep, 29 countries × 2 layers | 58 searches + `/contents` checks | $1.46 |
+| Deep Search sweep, first 29 countries × 2 layers | 58 searches + `/contents` checks | $1.46 |
 | Contents (text + highlights + summary), last 3 months | 136 | $0.41 |
 | Agent test run | 1 | $0.01 |
 | Agent relevance run for the UK | 1 | $0.03 |

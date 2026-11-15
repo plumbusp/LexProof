@@ -13,11 +13,11 @@ from .timeexpr import compare, parse_durations
 
 STATUSES = [
     {"code": "MATCH", "label": "Match", "severity": "ok",
-     "rule": "The law exists and says what the text claims. Real text shown as proof."},
+     "rule": "The law exists, and no conflicting deadline or number was found. Read the official text to confirm."},
     {"code": "MISQUOTED", "label": "Misquoted", "severity": "warn",
      "rule": "The law exists but says something different. Real text shown as proof."},
     {"code": "NOT_AS_CITED", "label": "Not as cited", "severity": "alert",
-     "rule": "The cited law/section doesn't exist as cited. Nearest real rule shown: maybe a wrong number, "
+     "rule": "The cited law or section doesn't exist as cited. The nearest real rule is shown: maybe a wrong number, "
              "a misquote, or invented."},
     {"code": "POSSIBLE_RULE", "label": "Possible rule", "severity": "info",
      "rule": "No law was named. This is the rule that most likely applies, with its real text."},

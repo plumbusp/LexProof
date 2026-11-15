@@ -13,7 +13,7 @@ from .config import settings
 from .pipeline import ORG_NAME
 
 COUNTRIES = {"UK": "United Kingdom"}
-COUNCIL, BANK = ORG_NAME, "Northgate Bank plc"
+COUNCIL = ORG_NAME
 
 AREAS = [
     {"id": "foi", "short": "FOI", "name": "Freedom of Information", "law": "Freedom of Information Act 2000",
@@ -27,9 +27,8 @@ AREAS = [
      "to": f"the Data Protection Officer, {COUNCIL}"},
     {"id": "council", "short": "LGA", "name": "Local Government Act", "law": "Local Government Acts 1972 and 1974",
      "about": "Complains about a council service, decision or meeting.", "to": f"the Complaints Team, {COUNCIL}"},
-    {"id": "bank", "short": "FCA", "name": "Financial Conduct Authority",
-     "law": "FCA complaint rules (DISP) and Payment Services Regulations 2017",
-     "about": "Complains to a bank about a payment or service.", "to": f"the Complaints Department, {BANK}"},
+    {"id": "housing", "short": "HA", "name": "Housing Act", "law": "Housing Act 1996 and Local Government Act 1974",
+     "about": "Complains about a homeless decision or a housing register band.", "to": f"the Housing Options Team, {COUNCIL}"},
 ]
 _BY_ID = {a["id"]: a for a in AREAS}
 
@@ -111,22 +110,22 @@ Under section 100B of the Local Government Act 1972, copies of the agenda and re
 
 Yours faithfully,
 Helen Marsh""",
-    "bank": """To the Complaints Department, {bank},
+    "housing": """Dear Housing Options Team,
 
-I am complaining about two payments totalling £2,340 that left my current account on 2 November 2026 without my authorisation.
+I made a homeless application to {council} on 2 October 2026, after my landlord ended my tenancy. My two children and I are sleeping in my sister's front room.
 
-Under regulation 76 of the Payment Services Regulations 2017, you must refund an unauthorised payment within 24 hours of being told about it. I reported this on the same day and have still not been refunded.
+Under section 184 of the Housing Act 1996, the council must make the inquiries needed to decide what duty it owes me, because it has reason to believe I may be homeless.
 
-Regulation 77 of the same Regulations says I can only be held liable for these losses if I acted fraudulently or with gross negligence, and I did neither.
+Section 188 of the Housing Act 1996 requires the council to secure interim accommodation for us while it makes those inquiries, as I have children and so a priority need.
 
-The Banking Consumer Protection Act 2019 also requires you to reimburse all scam victims within 5 working days.
+Last week I was told I am not owed the main housing duty. Section 202 of the Housing Act 1996 gives me three months from that decision to ask for a review, and I am asking for one now.
 
-The bank must pay me compensation for the stress this has caused.
+I also note that section 204Z of the Housing Act 1996 requires the council to pay my removal costs within 14 days of any review.
 
-I understand that under the FCA's DISP rules you have eight weeks to send me a final response, after which I can take my complaint to the Financial Ombudsman Service.
+The council must respond to my review request within 10 working days.
 
 Yours sincerely,
-Graham Pell""",
+Joanne Mercer""",
 }
 
 
@@ -195,22 +194,22 @@ The council must compensate me for the damage to my belongings.
 
 Yours faithfully,
 Samuel Adeyemi""",
-    "bank": """To the Complaints Department, {bank},
+    "housing": """Dear Housing Options Team,
 
-I am complaining about a holiday booking of £1,480 that I paid for with my credit card in August 2026. The travel company has since gone into administration and the holiday will not take place.
+I am complaining about the decision to place my family in the lowest band on {council}'s housing register. Five of us live in a one-bedroom flat with damp in every room.
 
-Section 75 of the Consumer Credit Act 1974 makes you jointly liable with the supplier for a breach of contract where I paid between £100 and £30,000 by credit card.
+Section 166A(3) of the Housing Act 1996 requires the council's allocation scheme to give reasonable preference to people living in overcrowded or unsatisfactory housing, which describes us exactly.
 
-Section 49 of the Consumer Rights Act 2015 requires a service to be performed with reasonable care and skill, and your handling of my claim so far has fallen short of that.
+Under section 166A(9) of the Housing Act 1996, I have the right to request a review of this decision and to be told the grounds for the outcome.
 
-Under regulation 76 of the Payment Services Regulations 2017, you have 5 business days to refund a payment I did not authorise, and one of the deposits was taken twice without my consent.
+The Housing (Fair Allocation) Act 2022 also requires councils to rehouse any overcrowded family within 6 months.
 
-The Card Payments Fairness Act 2021 also requires you to cancel all foreign transaction fees on cancelled bookings.
+If this is not resolved, I understand that section 26B of the Local Government Act 1974 gives me only 28 days to take my complaint to the Local Government and Social Care Ombudsman.
 
-The bank must refund my foreign transaction fees.
+The council must move us up to the highest band straight away.
 
-Yours sincerely,
-Ruth Calloway""",
+Yours faithfully,
+Kwame Asante""",
 }
 
 _TITLES = {
@@ -218,7 +217,7 @@ _TITLES = {
     "eir": ["Air quality on two roads", "Flood risk and planning"],
     "sar": ["Housing application records", "CCTV and a parking fine"],
     "council": ["Library closure meeting", "Housing repairs"],
-    "bank": ["Unauthorised payments", "Holiday refund by credit card"],
+    "housing": ["Homeless decision review", "Housing register band"],
 }
 # Two hand-written presets per area: instant, and each mixes correct, misquoted and invented law.
 PRESETS = {a: [{"id": f"{a}-{i + 1}", "title": t, "text": txt}
@@ -226,7 +225,7 @@ PRESETS = {a: [{"id": f"{a}-{i + 1}", "title": t, "text": txt}
 
 
 def _fill(text: str) -> str:
-    return text.replace("{council}", COUNCIL).replace("{bank}", BANK)
+    return text.replace("{council}", COUNCIL)
 
 
 def _gemini(area: dict) -> str:

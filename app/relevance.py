@@ -112,19 +112,23 @@ def rel_level(s: dict) -> int:
 
 
 def why(s: dict, profile: dict) -> list[str]:
-    """Short reasons shown on the card (at most 4)."""
+    """Short reasons shown on the card, in plain words (at most 4)."""
     out = []
     if s["same_country"]:
         out.append(f"In {profile['name']}")
     elif s["reached"]:
-        out.append(f"Trend seen in {profile['name']}" if s["trend"] else f"Same wave hit {profile['name']}")
+        out.append(f"Same trend seen in {profile['name']}" if s["trend"]
+                   else f"Also reported in {profile['name']} (source checked)")
     elif s["neighbour"]:
-        out.append("Next door")
-    out.append("Same channel" if s["same_channel"] else "Other channel")
+        out.append(f"Next door to {profile['name']}")
+    if s["media_only"]:
+        out.append("Aimed at newsrooms")
+    else:
+        out.append("Hits councils, schools or courts" if s["same_channel"] else "Not aimed at public bodies")
     if s["campaign"]:
-        out.append("Campaign signal")
+        out.append("Officials call it coordinated")
     if s["recent"]:
-        out.append("Last 90 days")
+        out.append("From the last 90 days")
     else:
         out = out[:3] + ["Older than 90 days: one level lower"]
     return out[:4]

@@ -13,11 +13,14 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import urlparse
 
-# EU-27 + UK + Switzerland (plan rule 4). Ukraine, Kosovo, Serbia, Moldova are out.
+# Geographic Europe, 42 countries: EU-27, UK, EFTA, microstates, Western Balkans, Moldova (plan rule 4).
+# Ukraine, Russia, Belarus, Turkey and Kosovo are not in the data; the map draws them as not covered.
 SCOPE = {"Austria", "Belgium", "Bulgaria", "Croatia", "Cyprus", "Czechia", "Denmark", "Estonia", "Finland",
          "France", "Germany", "Greece", "Hungary", "Ireland", "Italy", "Latvia", "Lithuania", "Luxembourg",
          "Malta", "Netherlands", "Poland", "Portugal", "Romania", "Slovakia", "Slovenia", "Spain", "Sweden",
-         "United Kingdom", "Switzerland"}
+         "United Kingdom", "Switzerland",
+         "Norway", "Iceland", "Liechtenstein", "Andorra", "Monaco", "San Marino", "Vatican",
+         "Serbia", "Bosnia and Herzegovina", "Montenegro", "North Macedonia", "Albania", "Moldova"}
 
 # DRAFT queries. The plan's queries file (exa-threat-map-queries.md) is not in the repo;
 # replace these with its sentences when it is added.
@@ -256,7 +259,7 @@ _FIXTURES = [
      "kind": "incident", "url": "https://example.test/c", "quote": "x", "date_start": "2026-10-01"},
     {"id": "fx-no-quote", "type": "T3", "country": "Poland", "voice": "official", "attribution": "named",
      "kind": "incident", "url": "https://example.test/d", "quote": "", "date_start": "2026-10-01"},
-    {"id": "fx-out-of-scope", "type": "T3", "country": "Serbia", "voice": "official", "attribution": "none",
+    {"id": "fx-out-of-scope", "type": "T3", "country": "Ukraine", "voice": "official", "attribution": "none",
      "kind": "warning", "url": "https://example.test/e", "quote": "x", "date_start": "2026-10-01"},
     {"id": "fx-media-only", "type": "T6", "country": "Sweden", "voice": "researchers", "attribution": "named",
      "kind": "incident", "url": "https://example.test/f", "quote": "x", "date_start": "2026-08-20",

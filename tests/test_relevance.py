@@ -56,7 +56,13 @@ def test_media_only_abroad_is_1_and_old_is_background():
 
 def test_why_has_at_most_four_reasons():
     r = rv.score(ev(voice="official", country="Ireland"), UK, TODAY)
-    assert 1 <= len(r["rel_why"]) <= 4 and "Next door" in r["rel_why"]
+    assert r["rel_why"] == ["Next door to the UK", "Hits councils, schools or courts", "Officials call it coordinated",
+                            "From the last 90 days"]
+    wave = {"same_channel": True, "reached_verified": True, "evidence_url": "https://bbc.test/wave"}
+    old = rv.score(ev(rel_facts=wave, voice="official", date_start="2026-05-01"), UK, TODAY)["rel_why"]
+    assert old == ["Also reported in the UK (source checked)", "Hits councils, schools or courts",
+                   "Officials call it coordinated", "Older than 90 days: one level lower"]
+    assert "Aimed at newsrooms" in rv.score(ev(type="T6"), UK, TODAY)["rel_why"]
 
 
 def test_older_than_90_days_drops_exactly_one_level_everywhere():

@@ -54,9 +54,18 @@ def test_run_end_to_end(offline):
         assert LETTER[h["start"]:h["end"]].lower() == quote.lower()
     assert res["request"]["type"] == "FOI" and res["request"]["requester"] == "Daniel Okafor"
     assert res["deadline"]["due"] == "2026-12-15"   # 20 working days; St Andrew's Day 30 Nov is skipped
-    assert any("No Gemini key" in w for w in res["meta"]["warnings"])
-    assert any("No Exa key" in w for w in res["meta"]["warnings"])
+    assert pipeline.AI_OFF in res["meta"]["warnings"] and pipeline.EXA_OFF in res["meta"]["warnings"]
     assert steps and steps[0].startswith("Reading the letter for legal references")
+
+
+def test_ai_failure_shows_a_short_line_and_keeps_the_raw_error_in_the_log(offline, monkeypatch):
+    monkeypatch.setattr(type(settings), "ai_enabled", property(lambda self: True))
+    raw = "Error code: 429 - [{'error': {'code': 429, 'message': 'You exceeded your current quota'}}]"
+    monkeypatch.setattr(pipeline.ai, "extract", lambda text: (_ for _ in ()).throw(RuntimeError(raw)))
+    res = pipeline.run(LETTER, {"received_date": "2026-11-16"})
+    assert pipeline.AI_FAILED in res["meta"]["warnings"]
+    assert not any("429" in w or "quota" in w for w in res["meta"]["warnings"])
+    assert any("429" in line for line in res["meta"]["log"]) and res["meta"]["extractor"] == "rules"
 
 
 def test_draft_reply_corrects_the_letter_without_labelling_anyone(offline):

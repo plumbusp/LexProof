@@ -40,13 +40,15 @@
       for (;;) {
         const j = await api(`/api/jobs/${job_id}`);
         if (j.status === "done") { $("#progress").hidden = true; render(j.result); break; }
-        if (j.status === "error") { progress(j.error, true); break; }
+        if (j.status === "error") { console.warn("[check]", j.error); progress(FAILED, true); break; }
         loading(j.progress || []);
         await new Promise((r) => setTimeout(r, 900));
       }
-    } catch (e) { progress(e.message, true); }
+    } catch (e) { console.warn("[check]", e); progress(FAILED, true); }
     $("#btn-run").disabled = false;
   }
+  // The officer never sees raw server or provider errors; the details stay in the job and the console.
+  const FAILED = "The check could not finish. Press Check to try again.";
   // Loading hint: which stage of the check is running and what it is doing right now.
   const STAGES = [
     { key: "read", title: "Reading the letter", sub: "Finding every law it cites or implies" },
@@ -81,8 +83,8 @@
     $("#kpis").hidden = true; $("#kpis").innerHTML = "";
     $("#warn").hidden = true; $("#asks").hidden = true; $("#progress").hidden = true;
     $("#extractor").textContent = "";
-    $("#cites").innerHTML = `<div class="empty">Results appear here after a check.</div>`;
-    $("#draft").innerHTML = `<p class="fine">A draft appears here after a check.</p>`;
+    $("#cites").innerHTML = `<div class="empty">Press Check to see each law the letter cites, with its status and the official text.</div>`;
+    $("#draft").innerHTML = `<p class="fine">A draft reply to the sender appears here after a check. You can edit it, then copy it.</p>`;
     $("#request-sub").textContent = "Paste a request or complaint, then press Check.";
     $("#input-wrap").hidden = false; $("#letter").hidden = true; $("#letter").innerHTML = ""; $("#btn-edit").hidden = true;
     history.replaceState(null, "", location.pathname + location.hash);
@@ -109,8 +111,11 @@
       <div class="card kpi"><span class="kpi-label">Reply deadline</span><div class="kpi-value small">${esc(fmtDate(d.due))} – ${esc(leftTxt)}</div><span class="kpi-sub">${esc(basis)}</span></div>
       <div class="card kpi"><span class="kpi-label">Request type</span><div class="kpi-value word">${esc(rt)}</div><span class="kpi-sub">${esc(result.request.requester ? "From " + result.request.requester : "Requester not named")}</span></div>
       <div class="card kpi"><span class="kpi-label">Citations</span><div class="kpi-value">${s.total}</div><span class="kpi-sub sans">Legal references found</span></div>
-      <div class="card kpi"><span class="kpi-label">Checked against official text</span><div class="kpi-value">${s.verified} of ${s.total}</div><span class="kpi-sub sans">Verified accurately</span></div>`;
+      <div class="card kpi"><span class="kpi-label">Correct as cited</span><div class="kpi-value">${s.verified} of ${s.total}</div><span class="kpi-sub sans">${esc(closer(s.total - s.verified))}</span></div>`;
   }
+
+  const closer = (n) => (n ? `${n} need${n === 1 ? "s" : ""} a closer look: click a row below` : "None flagged. Read the official text to confirm.");
+  const FOUND_BY = { rules: "Found by pattern rules, no AI", Gemini: "Found by Gemini (AI reading)" };
 
   function renderLetter() {
     const text = result.document.text;
@@ -166,9 +171,9 @@
   }
 
   function renderCites() {
-    $("#extractor").textContent = `found by ${result.meta.extractor} · ${result.meta.seconds}s`;
-    if (!result.claims.length) { $("#cites").innerHTML = `<div class="empty">No legal references found.</div>`; return; }
-    $("#cites").innerHTML = `<div style="overflow-x:auto"><table class="cites"><thead><tr><th class="n">#</th><th>What the letter says</th><th>Cited law</th><th>Status</th><th>Source</th></tr></thead><tbody>` +
+    $("#extractor").textContent = `${FOUND_BY[result.meta.extractor] || "Found by " + result.meta.extractor} · ${result.meta.seconds} s`;
+    if (!result.claims.length) { $("#cites").innerHTML = `<div class="empty">No legal references found in this letter.</div>`; return; }
+    $("#cites").innerHTML = `<p class="cites-hint fine">Click a row to see the letter's words next to the official text. Hover a status for what it means.</p><div style="overflow-x:auto"><table class="cites"><thead><tr><th class="n">#</th><th>What the letter says</th><th>Cited law</th><th>Status</th><th>Source</th></tr></thead><tbody>` +
       result.claims.map((c) => `<tr class="row${openId === c.id ? " open" : ""}" data-row="${c.id}">
         <td class="n">${c.n}</td>
         <td>“${esc(c.quote)}”</td>
@@ -253,7 +258,8 @@
       setTimeout(() => $("#btn-run").classList.remove("pulse"), 4000);
       $("#input").scrollIntoView({ behavior: "smooth", block: "center" });
     } catch (err) {
-      genStatus(`Could not generate a letter: ${esc(err.message)}`, true);
+      console.warn("[generate]", err);
+      genStatus("Could not load a letter. Try again, or paste your own.", true);
     }
     busy.forEach((x) => (x.disabled = false));
   }

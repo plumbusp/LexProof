@@ -40,7 +40,10 @@ ISO2 = {"Austria": "AT", "Belgium": "BE", "Bulgaria": "BG", "Croatia": "HR", "Cy
         "Denmark": "DK", "Estonia": "EE", "Finland": "FI", "France": "FR", "Germany": "DE", "Greece": "GR",
         "Hungary": "HU", "Ireland": "IE", "Italy": "IT", "Latvia": "LV", "Lithuania": "LT", "Luxembourg": "LU",
         "Malta": "MT", "Netherlands": "NL", "Poland": "PL", "Portugal": "PT", "Romania": "RO", "Slovakia": "SK",
-        "Slovenia": "SI", "Spain": "ES", "Sweden": "SE", "United Kingdom": "GB", "Switzerland": "CH"}
+        "Slovenia": "SI", "Spain": "ES", "Sweden": "SE", "United Kingdom": "GB", "Switzerland": "CH",
+        "Norway": "NO", "Iceland": "IS", "Liechtenstein": "LI", "Andorra": "AD", "Monaco": "MC",
+        "San Marino": "SM", "Vatican": "VA", "Serbia": "RS", "Bosnia and Herzegovina": "BA", "Montenegro": "ME",
+        "North Macedonia": "MK", "Albania": "AL", "Moldova": "MD"}
 
 LANGS = {"Austria": ["de"], "Belgium": ["nl", "fr"], "Bulgaria": ["bg"], "Croatia": ["hr"], "Cyprus": ["el"],
          "Czechia": ["cs"], "Denmark": ["da"], "Estonia": ["et", "ru"], "Finland": ["fi"], "France": ["fr"],
@@ -48,7 +51,11 @@ LANGS = {"Austria": ["de"], "Belgium": ["nl", "fr"], "Bulgaria": ["bg"], "Croati
          "Latvia": ["lv", "ru"], "Lithuania": ["lt"], "Luxembourg": ["fr", "de"], "Malta": ["en"],
          "Netherlands": ["nl"], "Poland": ["pl"], "Portugal": ["pt"], "Romania": ["ro"], "Slovakia": ["sk"],
          "Slovenia": ["sl"], "Spain": ["es"], "Sweden": ["sv"], "United Kingdom": ["en"],
-         "Switzerland": ["de", "fr", "it"]}
+         "Switzerland": ["de", "fr", "it"],
+         "Norway": ["no"], "Iceland": ["is"], "Liechtenstein": ["de"], "Andorra": ["ca", "es", "fr"],
+         "Monaco": ["fr"], "San Marino": ["it"], "Vatican": ["it"], "Serbia": ["sr"],
+         "Bosnia and Herzegovina": ["bs", "hr", "sr"], "Montenegro": ["sr"], "North Macedonia": ["mk"],
+         "Albania": ["sq"], "Moldova": ["ro", "ru"]}
 
 # Native-language search phrases per layer: [incident: complaints/requests flood, incident: threat emails, precursor].
 PHRASES = {
@@ -121,6 +128,27 @@ PHRASES = {
     "ru": ["госучреждения завалили массовыми скоординированными жалобами и обращениями",
            "письма с угрозами о минировании школ и судов",
            "жалобы, написанные с помощью искусственного интеллекта, перегружают учреждения"],
+    "no": ["offentlige etater oversvømmet av koordinerte masseklager eller henvendelser",
+           "bombetrusler på e-post til skoler og domstoler",
+           "økning i klager skrevet med kunstig intelligens eller ChatGPT"],
+    "is": ["opinberar stofnanir yfirfullar af samræmdum fjöldakvörtunum eða beiðnum",
+           "sprengjuhótanir í tölvupósti til skóla og dómstóla",
+           "aukning kvartana sem skrifaðar eru með gervigreind eða ChatGPT"],
+    "sr": ["institucije zatrpane masovnim koordinisanim pritužbama ili zahtevima",
+           "dojave o bombi imejlom školama i sudovima",
+           "porast pritužbi napisanih veštačkom inteligencijom ili ChatGPT-om"],
+    "bs": ["institucije zatrpane masovnim koordiniranim žalbama ili zahtjevima",
+           "dojave o bombi putem e-maila školama i sudovima",
+           "porast žalbi napisanih umjetnom inteligencijom ili ChatGPT-om"],
+    "mk": ["институции преплавени со масовни координирани жалби или барања",
+           "дојави за бомба по е-пошта до училишта и судови",
+           "пораст на жалби напишани со вештачка интелигенција или ChatGPT"],
+    "sq": ["institucionet të përmbytura me ankesa ose kërkesa masive të koordinuara",
+           "kërcënime për bombë me email në shkolla dhe gjykata",
+           "rritje e ankesave të shkruara me inteligjencë artificiale ose ChatGPT"],
+    "ca": ["administracions públiques inundades de queixes o sol·licituds massives coordinades",
+           "amenaces de bomba per correu electrònic a escoles i jutjats",
+           "augment de queixes escrites amb intel·ligència artificial o ChatGPT"],
 }
 
 # What Exa fills. 9 properties in all (the deep output_schema limit is 10, nested ones included).
