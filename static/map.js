@@ -400,8 +400,6 @@
     if (!live) { el.textContent = ""; return; }
     if (btn && !live.exa) btn.lastChild.textContent = "Replay last live check";
     const parts = [live.last_checked ? `Last checked by Exa: <b>${esc(clock(live.last_checked))}</b>` : "Not checked live yet"];
-    if (live.last_checked && live.last_cost_usd != null) parts.push(`this check cost ${esc(usd(live.last_cost_usd))}`);
-    parts.push(`today ${esc(usd(live.spent_today_usd))} of ${esc("$" + Number(live.cap_today_usd).toFixed(2))}`);
     if (live.new_since_yesterday) parts.push(`${esc(plural(live.new_since_yesterday, "new report", "new reports"))} since yesterday`);
     el.innerHTML = parts.join(" · ");
   }
@@ -424,7 +422,7 @@
       } else if (p.step === "proposed") out.push(["inbox", `Exa proposed ${plural(Number(p.n), "report", "reports")}.`]);
       else if (p.step === "checking") out.push(["spin", `Checking each quote on its page… <span class="fine">(${plural(Number(p.n), "new page", "new pages")})</span>`]);
       else if (p.step === "checked") out.push(["check_circle", `${Number(p.passed)} passed, ${Number(p.dropped)} dropped.`]);
-      else if (p.step === "reused") out.push(["history", `Exa already checked ${who} at ${esc(clock(p.finished_at))}. Showing that check, at no new cost.`]);
+      else if (p.step === "reused") out.push(["history", `Exa already checked ${who} at ${esc(clock(p.finished_at))}. Showing that check.`]);
     }
     return out.map((l, i) => (l[0] === "spin" && (i < out.length - 1 || j.status !== "running") ? ["check", l[1]] : l));
   }
@@ -440,7 +438,7 @@
       out.push(["history", `Replay of a real Exa check from ${esc(clock(res.finished_at))}. ${esc(res.reason || "Exa did not answer in time.")}`, "live-replay"]);
     } else if (res.reused && kind === "refresh") {
       const mins = Math.max(0, Math.round((Date.now() - new Date(res.finished_at)) / 60000));
-      out.push(["history", `Exa checked the last 24 hours ${mins ? plural(mins, "minute", "minutes") + " ago" : "just now"}. Showing that check, at no new cost.`]);
+      out.push(["history", `Exa checked the last 24 hours ${mins ? plural(mins, "minute", "minutes") + " ago" : "just now"}. Showing that check.`]);
     }
     const n = Number(res.passed) || 0;
     const dropped = (res.dropped || []).filter((d) => d.reason !== "already on the map");
@@ -456,8 +454,6 @@
     out.push(n
       ? ["fiber_new", `${plural(n, "new report", "new reports")} ${where}${j.status === "replay" ? "" : ", marked <b>New</b> on the map"}.`, "live-note"]
       : ["info", `No new reports ${where}. Nothing found is not the same as safe.`, "live-note"]);
-    const cost = j.status === "replay" || res.reused ? 0 : res.cost_usd;
-    out.push(["payments", `<span class="fine">This check cost ${esc(usd(cost))}.</span>`]);
     return out;
   }
 
