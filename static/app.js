@@ -205,6 +205,11 @@
     if (r && result) focusClaim(r.dataset.row, false);
   });
   $("#btn-run").onclick = run;
+  // Check glows green and bright once there is enough text to check (same minimum as run()); dim otherwise.
+  const syncReady = () => $("#btn-run").classList.toggle("ready", $("#input").value.trim().length >= 20 && !$("#btn-run").disabled);
+  $("#input").addEventListener("input", syncReady);
+  setInterval(syncReady, 300); // also catches text set from code (samples, saved jobs)
+  syncReady();
   $("#btn-panel").onclick = () => setPanel(!panelOpen());
   $("#btn-theme").onclick = () => setTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
   $("#btn-edit").onclick = () => { $("#input-wrap").hidden = false; $("#letter").hidden = true; $("#btn-edit").hidden = true; };
@@ -254,8 +259,6 @@
         : r.source === "fallback" ? `AI was unavailable, so a sample ${esc(name)} letter was loaded`
         : `New ${esc(name)} letter ready`;
       genStatus(`<span class="icon">check_circle</span>${what}. Press <b>Check</b> to see every law it cites checked.`);
-      $("#btn-run").classList.add("pulse");
-      setTimeout(() => $("#btn-run").classList.remove("pulse"), 4000);
       $("#input").scrollIntoView({ behavior: "smooth", block: "center" });
     } catch (err) {
       console.warn("[generate]", err);

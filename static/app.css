@@ -520,3 +520,11 @@ body[data-view="home"] .topbar { background: color-mix(in srgb, var(--panel) 70%
 
 /* AI letter generation switched off for the demo; the tooltip (title) explains why */
 .gen-off, .gen-off:hover { opacity: .5; cursor: not-allowed; filter: grayscale(1); }
+
+/* Check: dim until there is text to check, then a bright green glowing outline */
+#btn-run:not(.ready) { opacity: .6; }
+#btn-run.ready { border-color: #3FB950; opacity: 1; filter: brightness(1.08);
+  box-shadow: 0 0 0 1px #3FB950, 0 0 14px 2px rgba(63, 185, 80, .6); animation: check-glow 2.2s ease-in-out infinite; }
+@keyframes check-glow { 0%, 100% { box-shadow: 0 0 0 1px #3FB950, 0 0 10px 1px rgba(63, 185, 80, .45); }
+  50% { box-shadow: 0 0 0 1px #3FB950, 0 0 20px 4px rgba(63, 185, 80, .8); } }
+@media (prefers-reduced-motion: reduce) { #btn-run.ready { animation: none; } }
