@@ -22,8 +22,8 @@
 
   // Relevance to the UK, 1-5. Set by fixed rules in app/relevance.py from facts; never by AI.
   const REL = {
-    5: { name: "Act now", why: "Hitting UK councils, schools or services, in the last 90 days." },
-    4: { name: "Prepare", why: "In the UK but older or another channel, or a wave abroad that has already reached the UK." },
+    5: { name: "Act now", why: "Hitting UK councils, schools or services." },
+    4: { name: "Prepare", why: "In the UK but another channel, or a wave abroad that has already reached the UK." },
     3: { name: "Watch", why: "Same kind of pressure next door, a coordinated campaign abroad, or a trend already seen in the UK." },
     2: { name: "Background", why: "The same kind of pressure elsewhere in Europe." },
     1: { name: "Not relevant", why: "Another channel or sector, for example media only." },
@@ -227,7 +227,7 @@
     if (!box) return;
     box.innerHTML = `<h3>What the levels mean for the UK</h3><dl>${[5, 4, 3, 2, 1].map((n) =>
       `<div><dt><span class="sw r${n}"></span>${n} · ${esc(REL[n].name)}</dt><dd>${esc(REL[n].why)}</dd></div>`).join("")}</dl>
-      <p class="fine">Fixed rules set the level from facts. For each report abroad an Exa Agent checks two facts: does it hit a channel UK public bodies run, and did the same wave reach the UK? A "reached the UK" claim counts only if its source page, fetched with Exa, names the UK.</p>`;
+      <p class="fine"><b>Older than 90 days: one level lower</b> (5 becomes 4, 4 becomes 3, and so on; 1 stays 1). Fixed rules set the level from facts. For each report abroad an Exa Agent checks two facts: does it hit a channel UK public bodies run, and did the same wave reach the UK? A "reached the UK" claim counts only if its source page, fetched with Exa, names the UK.</p>`;
   }
 
   function renderSide() {

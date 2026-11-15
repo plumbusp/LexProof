@@ -59,11 +59,13 @@ The map page is the **UK view**. Each report gets one level from 1 to 5 for the 
 
 | Level | Meaning |
 |---|---|
-| 5 · Act now | Hitting UK councils, schools or services, in the last 90 days. |
-| 4 · Prepare | In the UK but older or another channel, or a specific wave abroad that has already reached the UK (checked source). |
+| 5 · Act now | Hitting UK councils, schools or services. |
+| 4 · Prepare | In the UK but another channel, or a specific wave abroad that has already reached the UK (checked source). |
 | 3 · Watch | Same kind of pressure next door (Ireland), a coordinated campaign abroad, or a trend already seen in the UK. |
 | 2 · Background | The same kind of pressure elsewhere in Europe. |
 | 1 · Not relevant | Another channel or sector, for example media only. |
+
+**Older than 90 days: one level lower**, the same for every level and country (5→4, 4→3, 3→2, 2→1; 1 stays 1).
 
 Inputs: country, channel (from the agent; a keyword rule for reports older than 90 days), "reached the UK" (agent + checked source), the campaign signal (an official or researchers call it coordinated, or an actor is blamed: the old evidence ladder), and date. A source the agent cites for the AI-complaint trend never counts as proof that a specific wave reached the UK.
 

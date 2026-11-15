@@ -90,18 +90,25 @@ def signals(e: dict, profile: dict, today: date | None = None) -> dict:
     }
 
 
-def rel_level(s: dict) -> int:
+def base_level(s: dict) -> int:
+    """The level a report would have if it were from this week (the date is not looked at here)."""
     if s["media_only"] and not s["same_country"]:
         return 1
-    if s["same_country"] and s["same_channel"] and s["recent"]:
-        return 5     # hits the channels public bodies here run, here, in the last 90 days
-    if s["same_country"] or (s["reached"] and s["recent"] and not s["trend"]):
-        return 4     # here but another channel or older; or a specific wave abroad that has reached this country
-    if s["same_channel"] and s["recent"] and (s["neighbour"] or s["campaign"] or s["reached"]):
-        return 3     # same channel, now: next door, a coordinated campaign, or a trend already seen here
+    if s["same_country"] and s["same_channel"]:
+        return 5     # hits the channels public bodies here run, here
+    if s["same_country"] or (s["reached"] and not s["trend"]):
+        return 4     # here but another channel; or a specific wave abroad that has reached this country
+    if s["same_channel"] and (s["neighbour"] or s["campaign"] or s["reached"]):
+        return 3     # same channel: next door, a coordinated campaign, or a trend already seen here
     if s["same_channel"]:
         return 2     # the same kind of pressure elsewhere: background
     return 1
+
+
+def rel_level(s: dict) -> int:
+    """One rule for every country and level: older than RECENT_DAYS -> one level lower (5->4 ... 2->1, 1 stays 1)."""
+    lv = base_level(s)
+    return lv if s["recent"] else max(1, lv - 1)
 
 
 def why(s: dict, profile: dict) -> list[str]:
@@ -116,7 +123,10 @@ def why(s: dict, profile: dict) -> list[str]:
     out.append("Same channel" if s["same_channel"] else "Other channel")
     if s["campaign"]:
         out.append("Campaign signal")
-    out.append("Last 90 days" if s["recent"] else "Older")
+    if s["recent"]:
+        out.append("Last 90 days")
+    else:
+        out = out[:3] + ["Older than 90 days: one level lower"]
     return out[:4]
 
 

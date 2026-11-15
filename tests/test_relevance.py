@@ -57,3 +57,19 @@ def test_media_only_abroad_is_1_and_old_is_background():
 def test_why_has_at_most_four_reasons():
     r = rv.score(ev(voice="official", country="Ireland"), UK, TODAY)
     assert 1 <= len(r["rel_why"]) <= 4 and "Next door" in r["rel_why"]
+
+
+def test_older_than_90_days_drops_exactly_one_level_everywhere():
+    old = "2026-05-01"
+    wave = {"same_channel": True, "reached_verified": True, "evidence_url": "https://bbc.test/wave"}
+    cases = [  # (event, level when recent)
+        (ev(country="United Kingdom"), 5),
+        (ev(country="United Kingdom", rel_facts={"same_channel": False}), 4),
+        (ev(rel_facts=wave), 4),
+        (ev(voice="official"), 3),
+        (ev(), 2),
+        (ev(type="T6"), 1),
+    ]
+    for e, recent in cases:
+        assert lvl(e) == recent
+        assert lvl({**e, "date_start": old}) == max(1, recent - 1)
