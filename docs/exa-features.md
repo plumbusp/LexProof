@@ -65,3 +65,5 @@ python -m app.threatstore --export
 1. **No source, no dot.** Every event needs a URL and a quote found on the fetched page.
 2. **Code sets the level.** Exa's fields (who calls it hostile, who is blamed) feed fixed rules in `app/threatmap.py`.
 3. **Summaries, headlines and translations are display only.** The original quote stays the proof.
+4. **Level 4 needs two outlets reporting the same incident:** same country, same type, dates within 7 days of each other.
+5. **A person can remove a wrong event** (wrong country, the same article counted twice) in `mapdata/review.json`, with the reason written down. Review only removes events; it never adds or upgrades one.

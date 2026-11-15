@@ -1,4 +1,6 @@
 """The map query: time window, searched vs not searched, type filter, dates, layers. Saved files only."""
+import json
+
 from conftest import art, exa_row, ext_row, item
 
 from app import threatstore as ts
@@ -101,6 +103,22 @@ def test_level_4_pools_source_sites_across_articles(store):
     assert ts.query("2026-10", "2026-10")["countries"]["Latvia"]["level"] != 4        # one site only
     store.ext(ext_row(A, one), ext_row(B, {**one, "date_start": "2026-10-20"}))
     assert ts.query("2026-10", "2026-10")["countries"]["Latvia"]["level"] == 4         # two different sites
+
+
+def test_level_4_needs_the_second_site_to_report_the_same_week(store):
+    store.exa(exa_row("Latvia", "2026-10", [art(A), art(B)]))
+    one = item(countries=["Latvia"], voice="official", attribution="named", type="T3", date_start="2026-10-01")
+    store.ext(ext_row(A, one), ext_row(B, {**one, "date_start": "2026-10-28"}))   # 27 days apart: two stories
+    assert ts.query("2026-10", "2026-10")["countries"]["Latvia"]["level"] != 4
+
+
+def test_events_removed_on_review_are_left_out(store):
+    store.exa(exa_row("Italy", "2026-10", [art(A)]))
+    store.ext(ext_row(A, item()))
+    eid = ts.events()[0]["id"]
+    (store.dir / "review.json").write_text(json.dumps({"drop": {eid: "wrong country"}}), encoding="utf-8")
+    ts._dropped.cache_clear()
+    assert ts.events() == []
 
 
 def test_events_without_a_matching_article_or_with_old_prompt_rows_are_ignored(store):

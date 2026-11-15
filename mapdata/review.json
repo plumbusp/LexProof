@@ -1,0 +1,8 @@
+{
+  "_about": "Events removed after a person read the source. Each entry says why. Applied in app/threatstore.events(), so the map and the exported snapshot both leave them out. Never used to add or upgrade an event.",
+  "drop": {
+    "8f8884b196": "Wrong country. The article (La Tercera) is about a 'massacre' threat at a university in Chile, not an event in Spain.",
+    "a3a366409f": "Counted three times. One press release about a meeting of the three Baltic data protection authorities, issued by the Lithuanian authority, was filed under Estonia, Latvia and Lithuania. Kept under Lithuania only.",
+    "391ead52f4": "Counted three times. Same Lithuanian press release as above. Kept under Lithuania only."
+  }
+}

@@ -181,15 +181,32 @@ def level(e: dict) -> int:
     return 1
 
 
+SAME_INCIDENT_DAYS = 7
+
+
+def _day(s):
+    try:
+        return date.fromisoformat((s or "")[:10])
+    except ValueError:
+        return None
+
+
 def with_levels(events: list[dict], layer: str = "hostile") -> list[dict]:
-    """Copies of the events with `level` set. Level 4 needs two source domains, so domains are
-    pooled per country and type first. The AI-complaint layer has no hostile level (always 0)."""
-    pool: dict[tuple, set] = {}
-    for e in events:
-        pool.setdefault((e["country"], e.get("type")), set()).add(e.get("domain") or domain(e["url"]))
+    """Copies of the events with `level` set. Level 4 needs two source sites reporting the SAME
+    incident: same country, same type, dates within SAME_INCIDENT_DAYS of each other. (Pooling
+    every site in a country made level 4 too easy: two unrelated stories counted as corroboration.)
+    The AI-complaint layer has no hostile level (always 0)."""
+    def site(x):
+        return x.get("domain") or domain(x["url"])
+
     out = []
     for e in events:
-        c = {**e, "domains": sorted(pool[(e["country"], e.get("type"))])}
+        d = _day(e.get("date_start"))
+        same = {site(o) for o in events
+                if o["country"] == e["country"] and o.get("type") == e.get("type")
+                and (d is None or (_day(o.get("date_start")) is not None
+                                   and abs((_day(o.get("date_start")) - d).days) <= SAME_INCIDENT_DAYS))}
+        c = {**e, "domains": sorted(same | {site(e)})}
         c["level"] = level(c) if layer == "hostile" else 0
         out.append(c)
     return out

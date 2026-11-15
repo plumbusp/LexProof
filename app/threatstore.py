@@ -137,9 +137,22 @@ def _view() -> dict:
     return {"events": [], "coverage": {}, "saved_at": "", "articles": 0, "extracted": 0}
 
 
+REVIEW = SNAPSHOT.parent / "review.json"
+
+
+@lru_cache(maxsize=2)
+def _dropped(stamp: float) -> frozenset:
+    """Event ids a person removed after reading the source (mapdata/review.json, committed)."""
+    if not REVIEW.exists():
+        return frozenset()
+    return frozenset(json.loads(REVIEW.read_text(encoding="utf-8")).get("drop", {}))
+
+
 def events() -> list[dict]:
-    """English translations (display only) are attached here; the original quote stays the proof."""
-    return [threatenrich.attach(threattranslate.attach(dict(e))) for e in _view()["events"]]
+    """English translations (display only) are attached here; the original quote stays the proof.
+    Events removed on review are left out."""
+    drop = _dropped(_stamp(REVIEW))
+    return [threatenrich.attach(threattranslate.attach(dict(e))) for e in _view()["events"] if e["id"] not in drop]
 
 
 def months_available() -> list[str]:

@@ -34,9 +34,10 @@ def store(tmp_path, monkeypatch):
     monkeypatch.setattr(tm, "RESULTS", tmp_path / "exa_results.jsonl")
     monkeypatch.setattr(ts, "EXTRACTIONS", tmp_path / "extractions.jsonl")
     monkeypatch.setattr(ts, "SNAPSHOT", tmp_path / "snapshot.json")   # never read the real committed snapshot
+    monkeypatch.setattr(ts, "REVIEW", tmp_path / "review.json")       # nor the real review list
 
     def clear():
-        for f in (ts._results_index, ts._extracted_count, ts._cached, ts._snapshot_view):
+        for f in (ts._results_index, ts._extracted_count, ts._cached, ts._snapshot_view, ts._dropped):
             f.cache_clear()
 
     def write(path, rows):

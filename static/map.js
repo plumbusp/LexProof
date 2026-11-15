@@ -34,8 +34,8 @@
       labels: (e) => [VOICE.official, KIND[e.kind], BLAME[e.attribution]] },
     { name: "Suspected attack", why: "It happened, and a hostile actor is suspected. Not confirmed.",
       labels: (e) => [KIND.incident, BLAME.suspected, VOICE[e.voice]] },
-    { name: "Confirmed campaign", why: "Officials or researchers name a state, and 2+ outlets report it.",
-      labels: (e) => [VOICE[e.voice], BLAME.named, "2+ outlets"] },
+    { name: "Confirmed campaign", why: "Officials or researchers name a state, and 2+ outlets report it the same week.",
+      labels: (e) => [VOICE[e.voice], BLAME.named, "2+ outlets, same week"] },
   ];
   const AI_TIER = { name: "AI complaint surge", why: "Real people using AI to complain. Never counted as hostile.",
     labels: (e) => ["Not hostile", e.ai_use === "yes" ? "AI use reported" : "AI use unclear"] };
