@@ -17,7 +17,8 @@ Exa is how LexProof reads the web. Every dot on the Regional Abuse Map and every
 | **Contents: highlights with a query** | `/contents`, `highlights.query = the event's quote` | `app/threatenrich.py` | The paragraph around the quote on the real page (saved as `context`). |
 | **Contents: summary with a query** | `/contents`, `summary.query = "In 2-3 short sentences in English: what happened, where, ..."` | `app/threatenrich.py` | A 2–3 line English summary per article, shown on each card as "Summary by Exa". It also translates: most articles are not in English. |
 | **Deep-lite (corroboration)** | `/search`, `type="deep-lite"`, `exclude_domains=[the first outlet]`, ±21 days | `app/threatdeep.py --corroborate` | Built, not yet run. Finds a second outlet for the same incident. |
-| **Agent** | `/agent/runs`, `effort="low"`, same `output_schema` | `app/threatdeep.py --investigate <country>` | Built and tested once (14 s, $0.012). A multi-step research run on one country. Its events go through the same quote check. Not used in the demo. |
+| **Agent: relevance to a country** | `/agent/runs`, `effort="low"`, `input.data` = the recent signal pool, `output_schema` with facts per signal | `app/relevance.py --run` | **Used.** One run for the UK, 122 signals, 44 s, $0.025. For each report abroad it returns two facts: does it hit a channel UK public bodies run, and did the same wave reach the UK (with a source URL). That URL is fetched with Exa Contents and must name the UK. Code then sets the level 1–5. |
+| **Agent: investigate a country** | `/agent/runs`, `effort="low"`, the events `output_schema` | `app/threatdeep.py --investigate <country>` | Built and tested once (14 s, $0.012). Its events go through the same quote check. Not used in the demo. |
 
 **Not used:**
 - **Snapshot** (`/contents` with `snapshotAsOf`): Exa replies `SNAPSHOT_NOT_ON_PLAN` on this key. It also covers only the last 5 months. For laws, legislation.gov.uk already serves dated versions for free.
@@ -48,19 +49,37 @@ All of it lives under `data/threatmap/`, which is gitignored: it is paid data an
 | Deep Search sweep, 29 countries × 2 layers | 58 searches + `/contents` checks | $1.46 |
 | Contents (text + highlights + summary), last 3 months | 136 | $0.41 |
 | Agent test run | 1 | $0.01 |
+| Agent relevance run for the UK | 1 | $0.03 |
 
 A daily refresh in production would be about 58 deep searches plus `/contents` on new articles: roughly $1–2 a day.
 
-## 4. Daily run (production)
+## 4. Relevance to one country (the UK view)
+
+The map page is the **UK view**. Each report gets one level from 1 to 5 for the UK; another country would get its own profile and its own agent run.
+
+| Level | Meaning |
+|---|---|
+| 5 · Act now | Hitting UK councils, schools or services, in the last 90 days. |
+| 4 · Prepare | In the UK but older or another channel, or a specific wave abroad that has already reached the UK (checked source). |
+| 3 · Watch | Same kind of pressure next door (Ireland), a coordinated campaign abroad, or a trend already seen in the UK. |
+| 2 · Background | The same kind of pressure elsewhere in Europe. |
+| 1 · Not relevant | Another channel or sector, for example media only. |
+
+Inputs: country, channel (from the agent; a keyword rule for reports older than 90 days), "reached the UK" (agent + checked source), the campaign signal (an official or researchers call it coordinated, or an actor is blamed: the old evidence ladder), and date. A source the agent cites for the AI-complaint trend never counts as proof that a specific wave reached the UK.
+
+Files: `data/threatmap/relevance_GB.json` (facts per signal), `data/threatmap/exa_raw/agent/<run>.json` (the full agent request and response). Rules: `app/relevance.py`, tests: `tests/test_relevance.py`.
+
+## 5. Daily run (production)
 
 ```
 python -m app.threatdeep --sweep --since <yesterday's month>
 python -m app.threatenrich --run --days 2 --budget 5
 python -m app.threattranslate --run
+python -m app.relevance --run --profile GB
 python -m app.threatstore --export
 ```
 
-## 5. Rules the Exa output never overrides
+## 6. Rules the Exa output never overrides
 
 1. **No source, no dot.** Every event needs a URL and a quote found on the fetched page.
 2. **Code sets the level.** Exa's fields (who calls it hostile, who is blamed) feed fixed rules in `app/threatmap.py`.

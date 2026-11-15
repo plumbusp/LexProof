@@ -201,17 +201,21 @@
 <main class="view page" id="view-map" data-view-section="map" hidden>
   <div class="map-head">
     <div>
-      <h2>Regional Abuse Map</h2>
-      <div class="section-sub">Where public institutions report being flooded with mass submissions. EU-27, UK and Switzerland.</div>
+      <h2>Regional Abuse Map <span class="demo-pill">UK view · Demo</span></h2>
     </div>
     <div class="legend" id="legend" aria-label="Legend"></div>
   </div>
 
+  <section class="map-intro" aria-label="What this page shows">
+    <p>This map shows how much each <b class="hl-threat">threat flood</b> (mass threat emails, coordinated complaint campaigns)
+      and each <b class="hl-complaint">complaint flood</b> (people using AI to send long complaints and requests) reported in Europe
+      matters to <b class="hl-uk">UK public bodies</b>: councils, schools, the NHS and ombudsmen.</p>
+    <p>Every report gets <b>one level from 1 to 5</b>. <b class="hl-uk">Level 5 · Act now</b> means it is hitting UK services in the last 90 days.
+      <b>Opened for another country, the same news would score differently.</b></p>
+    <p class="fine">Demo: news saved up to 14 Nov 2026, found and summarised with Exa. In production it updates every day.</p>
+  </section>
+
   <div class="map-controls">
-    <div class="seg" role="group" aria-label="Layer">
-      <button type="button" class="seg-btn" data-layer="hostile" aria-pressed="true">Hostile events</button>
-      <button type="button" class="seg-btn" data-layer="precursor" aria-pressed="false">AI complaint surge</button>
-    </div>
     <div class="range">
       <label>From <select id="map-from"></select></label>
       <label>To <select id="map-to"></select></label>

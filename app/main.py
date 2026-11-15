@@ -98,8 +98,8 @@ def threatmap(layer: str = "hostile", frm: str | None = Query(None, alias="from"
     """Regional Abuse Map. Reads saved files only (no Exa, no Gemini); from/to are months 'YYYY-MM'
     (default: everything searched); types is a comma list like T3,T5, empty = none, absent = all."""
     months = threatstore.months_available()
-    if layer not in ("hostile", "precursor"):
-        raise HTTPException(400, "layer must be hostile or precursor")
+    if layer not in ("hostile", "precursor", "relevance"):
+        raise HTTPException(400, "layer must be hostile, precursor or relevance")
     for m in (frm, to):
         if m is not None and not re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", m):
             raise HTTPException(400, "from/to must look like 2026-10")

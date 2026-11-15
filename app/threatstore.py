@@ -18,7 +18,7 @@ from functools import lru_cache
 from pathlib import Path
 
 from . import threatmap as tm
-from . import threatenrich, threattranslate
+from . import relevance, threatenrich, threattranslate
 
 EXTRACTIONS = tm.OUT_DIR / "extractions.jsonl"
 SNAPSHOT = Path(__file__).resolve().parent.parent / "mapdata" / "snapshot.json"
@@ -152,7 +152,8 @@ def events() -> list[dict]:
     """English translations (display only) are attached here; the original quote stays the proof.
     Events removed on review are left out."""
     drop = _dropped(_stamp(REVIEW))
-    return [threatenrich.attach(threattranslate.attach(dict(e))) for e in _view()["events"] if e["id"] not in drop]
+    return [relevance.attach(threatenrich.attach(threattranslate.attach(dict(e))))
+            for e in _view()["events"] if e["id"] not in drop]
 
 
 def months_available() -> list[str]:
@@ -176,27 +177,37 @@ def export(path: Path | None = None) -> dict:
     return snap
 
 
-def query(frm: str, to: str, layer: str = "hostile", types: list[str] | None = None) -> dict:
+def query(frm: str, to: str, layer: str = "hostile", types: list[str] | None = None, profile: str = "GB") -> dict:
     """Everything the map page needs for the months frm..to (inclusive, 'YYYY-MM').
     types=None means every type; an empty list means none (an empty map, not a broken one)."""
     v = _view()
     months = months_available()
     cov = v["coverage"]
     wanted = [m for m in months if frm <= m <= to]
-    in_window = [e for e in events() if e["layer"] == layer and frm <= e["date_start"][:7] <= to]
+    in_window = [e for e in events() if (layer == "relevance" or e["layer"] == layer) and frm <= e["date_start"][:7] <= to]
     all_types = sorted({e["type"] for e in in_window})
     evs = in_window if types is None else [e for e in in_window if e["type"] in types]
     countries = {}
     for c in sorted(tm.SCOPE):
         searched = bool(cov.get(c, set()) & set(wanted))
         countries[c] = {"searched": searched, "level": 0, "media": 0, "events": []}
-    for c, lv in tm.country_levels(evs, layer).items():
-        countries[c]["level"] = lv
-    for e in tm.with_levels(evs, layer):
+    if layer == "relevance":   # one scale, 1-5: relevance to the profile's country (both layers together)
+        prof = relevance.PROFILES[profile]
+        scored = [relevance.score(e, prof) for e in tm.with_levels([e for e in evs if tm.valid(e)], "hostile")]
+        for e in scored:
+            countries[e["country"]]["level"] = max(countries[e["country"]]["level"], e["rel"])
+        scored.sort(key=lambda e: (e["rel"], e["date_start"]), reverse=True)
+    else:
+        for c, lv in tm.country_levels(evs, layer).items():
+            countries[c]["level"] = lv
+        scored = tm.with_levels(evs, layer)
+    for e in scored:
         slot = countries[e["country"]]
         slot["events"].append(e)
         slot["media"] += e["type"] == "T6"
-    return {"layer": layer, "from": frm, "to": to, "months": months, "searched_months": wanted,
+    top = [e for e in scored if e.get("rel", 0) >= 4][:12] if layer == "relevance" else []
+    return {"layer": layer, "profile": profile if layer == "relevance" else None, "top": top,
+            "from": frm, "to": to, "months": months, "searched_months": wanted,
             "types": all_types, "countries": countries, "n_events": len(evs),
             "via": {k: sum(1 for e in evs if e.get("via", "exa-gemini") == k) for k in sorted({e.get("via", "exa-gemini") for e in evs})},
             "sites": len({e["domain"] for e in evs}),
