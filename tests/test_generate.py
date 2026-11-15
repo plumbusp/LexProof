@@ -26,9 +26,16 @@ def test_two_presets_per_area_each_with_real_and_fake_citations():
 
 
 def test_every_act_a_preset_cites_on_purpose_is_in_the_dictionary():
-    for name in ["Local Government Act 1974", "Consumer Credit Act 1974", "Consumer Rights Act 2015",
-                 "Payment Services Regulations 2017", "Environmental Information Regulations 2004", "UK GDPR"]:
+    for name in ["Local Government Act 1974", "Housing Act 1996", "Environmental Information Regulations 2004", "UK GDPR"]:
         assert laws.lookup(name), name
+
+
+def test_every_letter_is_to_the_council_not_a_bank():
+    for a in generate.AREAS:
+        assert generate.COUNCIL in a["to"], a["id"]
+        for p in generate.PRESETS[a["id"]]:
+            text = generate.generate(a["id"], preset=p["id"])["text"]
+            assert not re.search(r"\bbank\b|Bank plc|FCA\b", text), p["id"]
 
 
 def test_without_ai_or_when_ai_fails_a_preset_is_used(monkeypatch):

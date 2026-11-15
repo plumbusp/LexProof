@@ -14,7 +14,7 @@
 <body>
 <header class="topbar">
   <div class="brand">
-    <a class="brand-name" href="#home">LexProof</a><span class="slash">/</span><span class="org" id="org" title="Demo workspace. LexProof is not affiliated with this council."></span><span class="demo-tag" title="Demo workspace. LexProof is not affiliated with this council.">Demo</span>
+    <a class="brand-name" href="#home">LexProof</a><span class="slash">/</span><span class="org" id="org" title="Demo workspace for one UK council. Each public body in Europe gets its own. LexProof is not affiliated with this council."></span><span class="demo-tag" title="Demo workspace for one UK council. Each public body in Europe gets its own. LexProof is not affiliated with this council.">Demo</span>
   </div>
   <nav class="tabs" aria-label="Views">
     <a class="tab" href="#home" data-view="home">Home</a>
@@ -24,7 +24,7 @@
   <div class="controls">
     <div class="panel-controls" data-only="panel">
       <button class="btn primary" id="btn-run" type="button"><span class="icon">rule</span>Check</button>
-      <button class="btn" id="btn-panel" type="button" aria-pressed="true" title="Show or hide suggestions"><span class="icon">right_panel_close</span>Suggestions</button>
+      <button class="btn" id="btn-panel" type="button" aria-pressed="true" title="Show or hide the results: each citation checked and the draft reply"><span class="icon">right_panel_close</span>Results</button>
     </div>
     <button class="btn icon-only" id="btn-theme" type="button" title="Light / dark"><span class="icon" id="theme-icon">dark_mode</span></button>
   </div>
@@ -44,12 +44,12 @@
       <svg class="demo-arc" width="60" height="66" viewBox="0 0 60 66" aria-hidden="true">
         <path d="M14 63 C56 52 20 30 20 4" /><path d="M13.5 11 L20 4 L26.5 11" />
       </svg>
-      <p>This is a demo workspace.<br>We set one up for your organisation.</p>
+      <p>Demo workspace: Camden Council, UK.<br>We set one up for any public body in Europe.</p>
     </div>
     <div class="hero-slot" id="hero-slot"></div>
     <div class="hero-text">
       <p class="hero-tag">Shining a light on every law a letter cites.</p>
-      <p class="eyebrow">Demo for UK public bodies</p>
+      <p class="eyebrow">Demo: one UK council · Ready for any European country</p>
     </div>
     <button class="hero-cue" id="hero-cue" type="button">
       <span>See how we check</span><span class="icon">south</span>
@@ -72,14 +72,19 @@
         <span class="icon flow-arrow">arrow_forward</span>
         <span class="flow-step">Laws it cites</span>
         <span class="icon flow-arrow">arrow_forward</span>
-        <span class="flow-results">
-          <span class="badge st-MATCH">Correct</span>
-          <span class="badge st-MISQUOTED">Misquoted</span>
-          <span class="badge st-NOT_FOUND">Doesn't exist</span>
-        </span>
+        <span class="flow-step">Official text</span>
+        <span class="icon flow-arrow">arrow_forward</span>
+        <span class="flow-step">One status each</span>
       </div>
-      <p class="lede reveal" style="--i:3">We find each reference, fetch the real text from legislation.gov.uk and compare them word for word.
-        No fetched proof, no verdict.</p>
+      <p class="lede reveal" style="--i:3">We find each reference, fetch the official text (legislation.gov.uk in this UK demo; each country's own law database elsewhere)
+        and check what the letter claims against it. Every verdict comes with its source.</p>
+      <ul class="home-statuses reveal" style="--i:4" aria-label="The five statuses">
+        <li><span class="badge st-MATCH">MATCH</span><span>The law exists, and no conflicting deadline or number was found.</span></li>
+        <li><span class="badge st-MISQUOTED">MISQUOTED</span><span>The law exists but says something different, for example another deadline.</span></li>
+        <li><span class="badge st-NOT_AS_CITED">NOT AS CITED</span><span>No such section. We show the nearest real rule.</span></li>
+        <li><span class="badge st-POSSIBLE_RULE">POSSIBLE RULE</span><span>No law named. We show the rule that most likely applies.</span></li>
+        <li><span class="badge st-NOT_FOUND">NOT FOUND</span><span>No matching law exists or could be found.</span></li>
+      </ul>
     </section>
 
     <section class="home-step">
@@ -99,12 +104,19 @@
       </div>
     </section>
 
+    <section class="home-step">
+      <p class="eyebrow reveal">One authority today. Any authority tomorrow.</p>
+      <h2 class="reveal" style="--i:1">Built for Camden. Ready for Lyon, Tampere or Kraków.</h2>
+      <p class="lede reveal" style="--i:2">A workspace is three settings: the authority's name, its country's official law database,
+        and what counts as relevant to it on the map. The checks and the rules stay the same.</p>
+    </section>
+
     <section class="home-step home-end">
       <p class="eyebrow reveal">Lights on</p>
       <h2 class="reveal" style="--i:1">Proof, not guesses.</h2>
       <div class="powered reveal" style="--i:2">
         <img src="/static/img/exa.png" alt="" width="32" height="32">
-        <p><strong>Powered by Exa.</strong> Exa finds and reads the laws, regulator pages and news reports behind every check and every dot on the map.</p>
+        <p><strong>Powered by Exa.</strong> Exa finds the real law when a letter names none or cites one that doesn't exist, reads every news report on the map in its own language, and checks each quote on the real page.</p>
       </div>
       <a class="btn primary home-cta reveal" style="--i:3" href="#panel">Check a letter<span class="icon">arrow_forward</span></a>
       <p class="fine home-foot reveal" style="--i:4">The officer decides. Nothing is sent from here.</p>
@@ -114,6 +126,15 @@
 
 <!-- Complaint Reviewer Panel -->
 <main class="view page" id="view-panel" data-view-section="panel" hidden>
+  <section class="howto" aria-label="What do I do here?">
+    <p class="eyebrow">What do I do here?</p>
+    <ol>
+      <li>Paste a letter below, or pick a sample.</li>
+      <li>Press <b>Check</b> (top right).</li>
+      <li>Read each citation's status, then edit and copy the draft reply.</li>
+    </ol>
+  </section>
+
   <section class="card gen" id="gen">
     <div class="gen-bar">
       <div class="gen-intro">
@@ -139,7 +160,7 @@
         <span class="gen-label">Country</span>
         <div class="gen-country">
           <span class="gen-country-name"><span class="gen-cc">UK</span>United Kingdom</span>
-          <span class="gen-note">This demo is built around UK legislation. The app can later be extended to work in any European country.</span>
+          <span class="gen-note">This demo checks UK law for Camden Council. For a public body in another European country we connect that country's official law database; nothing else changes.</span>
         </div>
       </div>
       <div class="gen-row">
@@ -181,7 +202,7 @@
       <section class="card asks" id="asks" hidden></section>
       <section class="card">
         <div class="section-head"><h2>Citations checked</h2><span class="fine" id="extractor"></span></div>
-        <div id="cites"><div class="empty">Results appear here after a check.</div></div>
+        <div id="cites"><div class="empty">Press Check to see each law the letter cites, with its status and the official text.</div></div>
       </section>
       <section class="card">
         <div class="section-head">
@@ -189,7 +210,7 @@
           <button class="btn" id="btn-copy" type="button">Copy</button>
         </div>
         <div class="reply-body">
-          <div class="draft" id="draft" contenteditable="true"><p class="fine">A draft appears here after a check.</p></div>
+          <div class="draft" id="draft" contenteditable="true"><p class="fine">A draft reply to the sender appears here after a check. You can edit it, then copy it.</p></div>
           <div class="fine">Nothing is sent from here.</div>
         </div>
       </section>
@@ -202,18 +223,22 @@
   <header class="map-hero">
     <div class="map-hero-top">
       <p class="eyebrow">Regional Abuse Map</p>
-      <span class="demo-tag ws-tag" title="Demo view. Another country would see different levels.">UK view · Demo</span>
+      <span class="demo-tag ws-tag" title="Demo view for one UK council. A council in another country sees its own levels.">UK view for Camden Council · Demo</span>
+      <button type="button" class="btn live-btn" id="live-24h" title="One live Exa search of news from all 42 countries, published in the last 24 hours.">
+        <span class="icon">travel_explore</span>Check the last 24 hours</button>
     </div>
+    <p class="fine live-line" id="live-line" aria-live="polite"></p>
+    <ol class="live-steps" id="live-steps" aria-live="polite" hidden></ol>
     <h2 class="map-title">What in Europe matters to UK public bodies</h2>
     <p class="lede">How much each <b class="hl-threat">threat flood</b> (mass threat emails, coordinated complaint campaigns)
       and each <b class="hl-complaint">complaint flood</b> (people sending long AI-written complaints and requests) reported in Europe
       matters to <b class="hl-uk">UK councils, schools, the NHS and ombudsmen</b>.</p>
     <ul class="map-how" aria-label="How it works">
-      <li><b>Fetch.</b> <b class="hl-exa">Exa</b> searches the live web for these floods in each country's own language, reads every article and checks each quote on the real page.</li>
-      <li><b>Filter.</b> An <b class="hl-exa">Exa Agent</b> (AI) checks every report against the client, here <b class="hl-uk">UK public bodies</b>. Fixed rules turn its findings into a level from 1 to 5.</li>
-      <li><b>Show.</b> One map of Europe for the client. <b class="hl-uk">5 · Act now</b> means it is hitting UK services now; older than 90 days drops one level.</li>
+      <li><b>Fetch.</b> <b class="hl-exa">Exa</b> searches the web for these reports in each country's own language, reads every article and checks each quote on the real page.</li>
+      <li><b>Filter.</b> An <b class="hl-exa">Exa Agent</b> (AI) checks each report against one question: does this matter to <b class="hl-uk">UK public bodies like Camden Council</b>? Fixed rules turn its findings into a level from 1 to 5.</li>
+      <li><b>Show.</b> One map of Europe for Camden Council. <b class="hl-uk">5 · Act now</b> means it is hitting UK services now; older than 90 days drops one level.</li>
     </ul>
-    <p class="fine">Demo: news saved up to 14 Nov 2026. In production it updates every day. Another client country sees different levels.</p>
+    <p class="fine">Demo. A council in France or Finland gets its own view of the same reports, with its own levels.</p>
   </header>
 
   <div class="map-controls">
@@ -221,7 +246,7 @@
     <div class="range">
       <label>From <select id="map-from"></select></label>
       <label>To <select id="map-to"></select></label>
-      <button type="button" class="btn" data-preset="1">Last month</button>
+      <button type="button" class="btn" data-preset="1" title="The current calendar month only">This month</button>
       <button type="button" class="btn" data-preset="3">Last 3 months</button>
       <button type="button" class="btn" data-preset="0">All</button>
     </div>
@@ -231,16 +256,17 @@
   <div class="map-layout">
     <section class="card map-card">
       <div class="map-status fine" id="map-status">Loading map…</div>
+      <p class="map-hint fine">Click a country to see its reports. Click a report's source to read it. Level = how much it matters to UK public bodies today, from 5 (act now) to 1 (not relevant).</p>
       <div class="map-canvas" id="map-canvas"></div>
     </section>
     <aside class="card map-side" id="map-side">
-      <div class="empty">Select a country to see its events.</div>
+      <div class="empty">Loading the reports that matter most to the UK…</div>
     </aside>
   </div>
 
   <section class="card map-tiers" id="map-tiers" aria-label="What the levels mean"></section>
 
-  <p class="fine map-foot" id="map-foot">Reported or warned, not proven attack. Levels are set by rules, not by AI.</p>
+  <p class="fine map-foot" id="map-foot">AI gives facts. Fixed rules set the level. Reported or warned, not a proven attack.</p>
 </main>
 
 <script src="/static/app.js"></script>

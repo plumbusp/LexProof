@@ -7,7 +7,10 @@ from app.extract_rules import case_facts, extract
 from app.textutil import find_span, is_verbatim
 from app.timeexpr import compare, parse_durations
 
-SAMPLE = (Path(__file__).resolve().parent.parent / "samples" / "margaret_ellis.txt").read_text(encoding="utf-8")
+# A letter to a bank, kept only as a hard extractor test (payment rules, FCA DISP, "the same Act").
+# It is not a demo sample: the demo letters are all addressed to the council (samples/, app/generate.py).
+SAMPLE = (Path(__file__).resolve().parent / "fixtures" / "bank_letter_extractor.txt").read_text(encoding="utf-8")
+COUNCIL_SAMPLE = (Path(__file__).resolve().parent.parent / "samples" / "camden_housing_complaint.txt").read_text(encoding="utf-8")
 
 
 def test_extracts_all_ten_citations():
@@ -25,6 +28,15 @@ def test_extracts_all_ten_citations():
         ("unnamed", "", "", ""),                      # 8% statutory interest
         ("regulator_rule", "", "", ""),               # 8 weeks -> DISP
     ]
+
+
+def test_council_sample_has_a_correct_a_misquoted_and_an_invented_citation():
+    cits = [c for c in extract(COUNCIL_SAMPLE) if c.kind == "legislation"]
+    got = [(c.leg_type, c.number, c.provision_id) for c in cits]
+    assert ("ukpga", "52", "184") in got             # Housing Act 1996 s.184: correct
+    assert ("ukpga", "52", "202") in got             # s.202: "three months" (the law says 21 days)
+    assert ("ukpga", "52", "204Z") in got            # s.204Z: does not exist
+    assert "Camden Council" in COUNCIL_SAMPLE and "bank" not in COUNCIL_SAMPLE.lower()
 
 
 def test_claim_details():

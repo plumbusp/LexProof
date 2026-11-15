@@ -19,7 +19,7 @@ def seeded(store):
 def test_defaults_to_everything_searched(seeded):
     d = client.get("/api/threatmap").json()
     assert (d["from"], d["to"], d["layer"]) == ("2026-09", "2026-10", "hostile")
-    assert d["countries"]["Italy"]["level"] == 2 and len(d["countries"]) == 29
+    assert d["countries"]["Italy"]["level"] == 2 and len(d["countries"]) == 42
     assert {"months", "types", "n_events", "extracted", "articles", "saved_at"} <= d.keys()
 
 

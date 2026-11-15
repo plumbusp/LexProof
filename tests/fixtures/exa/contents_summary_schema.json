@@ -1,0 +1,76 @@
+{
+ "note": "Real Exa /contents response (15 Nov 2026), text trimmed to the passage around the quote.",
+ "request": {
+  "urls": [
+   "https://puheenvuoro.iltalehti.fi/jarno-limnell/suomen-seuraava-turvallisuuskoe-voi-alkaa-sahkopostista-ei-ohjuksesta/"
+  ],
+  "text": {
+   "maxCharacters": 20000
+  },
+  "summary": {
+   "query": "Answer in English about this article. The quoted sentence is: «Myös kaksi Helsingistä lähtenyttä Finnairin lentoa on joutunut perättömien pommiuhkausten kohteeksi.». Only facts stated in the article.",
+   "schema": {
+    "type": "object",
+    "properties": {
+     "lang": {
+      "type": "string",
+      "description": "ISO 639-1 code of the article's language, e.g. lv, de, en"
+     },
+     "title_en": {
+      "type": "string",
+      "description": "the article's title in English"
+     },
+     "headline_en": {
+      "type": "string",
+      "description": "one plain factual line in English, max 90 characters: what happened, to whom, where"
+     },
+     "quote_en": {
+      "type": "string",
+      "description": "a faithful English translation of the quoted sentence, nothing added; the sentence itself if it is already English"
+     },
+     "summary_en": {
+      "type": "string",
+      "description": "2-3 short English sentences: what happened, where, which bodies, how many, who is blamed"
+     }
+    },
+    "required": [
+     "lang",
+     "title_en",
+     "headline_en",
+     "quote_en",
+     "summary_en"
+    ]
+   }
+  }
+ },
+ "response": {
+  "requestId": "82c6088c2ebe120f99f5106b52e0cdcb",
+  "results": [
+   {
+    "id": "https://puheenvuoro.iltalehti.fi/jarno-limnell/suomen-seuraava-turvallisuuskoe-voi-alkaa-sahkopostista-ei-ohjuksesta/",
+    "title": "Suomen seuraava turvallisuuskoe voi alkaa sähköpostista, ei ohjuksesta | Puheenvuoro",
+    "url": "https://puheenvuoro.iltalehti.fi/jarno-limnell/suomen-seuraava-turvallisuuskoe-voi-alkaa-sahkopostista-ei-ohjuksesta/",
+    "publishedDate": "2026-11-13T06:17:22.000Z",
+    "author": "JarnoLimnell",
+    "text": "tapahtunut. Tämä muuttaa käsitystämme turvallisuudesta ja ennen kaikkea siitä miten turvallisuutta on johdettava.\n\nViime päivinä tuhannet eurooppalaiset koulut ovat joutuneet pommiuhkausten kohteiksi. Matkustajalentoja on häiritty, lentokoneita ohjattu muualle ja turvallisuusviranomaisia hälytetty. Myös kaksi Helsingistä lähtenyttä Finnairin lentoa on joutunut perättömien pommiuhkausten kohteeksi. Euroopan turvallisuusympäristön muutos näkyy jo suomalaisessa arjessa.\n\nNäissä tapahtumissa on kyse paljon suuremmasta asiasta kuin yksittäisistä uhkausviesteistä.\n\nPerinteisesti olemme arvioineet hyökkäyksen vakavuutta sen aiheuttaman fyysisen vahingon perusteella. Nyt tämä ajattelutapa ei enää ri",
+    "summary": "{\"lang\":\"fi\",\"title_en\":\"Suomen seuraava turvallisuuskoe voi alkaa sähköpostista, ei ohjuksesta | Puheenvuoro\",\"headline_en\":\"Two Finnair flights from Helsinki were subjected to false bomb threats\",\"quote_en\":\"Two Finnair flights departing from Helsinki have been subjected to false bomb threats.\",\"summary_en\":\"The article discusses how Europe faces security threats where attackers can trigger widespread disruption with minimal costs. It notes that several European schools have received bomb threats and two Finnair flights from Helsinki were subjected to false threats; it considers the broader security implications and the attacker’s ability to dictate the rhythm of events. It mentions suspected but unconfirmed involvement by Russia and emphasizes distinguishing confirmed events from intelligence assessments and political conclusions.\"}",
+    "image": "https://puheenvuoro.iltalehti.fi/wp-content/uploads/2023/04/Limnell_Jarno-joulukuu-2022-scaled.jpg"
+   }
+  ],
+  "statuses": [
+   {
+    "id": "https://puheenvuoro.iltalehti.fi/jarno-limnell/suomen-seuraava-turvallisuuskoe-voi-alkaa-sahkopostista-ei-ohjuksesta/",
+    "status": "success",
+    "source": "cached"
+   }
+  ],
+  "costDollars": {
+   "total": 0.002,
+   "contents": {
+    "text": 0.001,
+    "summary": 0.001
+   }
+  },
+  "searchTime": 1542.9927630000748
+ }
+}

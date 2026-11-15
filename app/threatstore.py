@@ -13,12 +13,12 @@ The map is a query over this data, so changing the time window costs nothing.
 import hashlib
 import json
 import sys
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 from functools import lru_cache
 from pathlib import Path
 
 from . import threatmap as tm
-from . import relevance, threatenrich, threattranslate
+from . import pages, relevance, threatenrich, threattranslate
 
 EXTRACTIONS = tm.OUT_DIR / "extractions.jsonl"
 SNAPSHOT = Path(__file__).resolve().parent.parent / "mapdata" / "snapshot.json"
@@ -148,11 +148,32 @@ def _dropped(stamp: float) -> frozenset:
     return frozenset(json.loads(REVIEW.read_text(encoding="utf-8")).get("drop", {}))
 
 
+LIVE_VIAS = ("exa-24h", "exa-agent")   # found by a live check on the map (the two buttons)
+NEW_HOURS = 24
+
+
+def clear_caches() -> None:
+    for fn in (_results_index, _extracted_count, _cached):
+        fn.cache_clear()
+
+
+def mark_new(e: dict, now: datetime | None = None) -> dict:
+    """new = found by a live check in the last 24 hours (computed at read time, so a snapshot ages correctly)."""
+    now = now or datetime.now(timezone.utc)
+    try:
+        found = datetime.fromisoformat(e.get("found_at") or "")
+    except ValueError:
+        found = None
+    e["new"] = bool(found and e.get("via") in LIVE_VIAS and (now - found).total_seconds() <= NEW_HOURS * 3600)
+    return e
+
+
 def events() -> list[dict]:
     """English translations (display only) are attached here; the original quote stays the proof.
+    Saved headlines/translations win; Exa's English page fields (app/pages.py) fill what is missing.
     Events removed on review are left out."""
     drop = _dropped(_stamp(REVIEW))
-    return [relevance.attach(threatenrich.attach(threattranslate.attach(dict(e))))
+    return [mark_new(relevance.attach(pages.attach(threatenrich.attach(threattranslate.attach(dict(e))))))
             for e in _view()["events"] if e["id"] not in drop]
 
 
@@ -166,11 +187,22 @@ def saved_at() -> str:
     return _view()["saved_at"]
 
 
+def _live_runs_for_snapshot(per_kind: int = 20) -> list[dict]:
+    """The newest real live checks (the map's two buttons), so a deploy can replay them. No article text in them."""
+    f = tm.OUT_DIR / "live_runs.jsonl"
+    rows = [r for r in read_jsonl(f) if r.get("status") == "done"]
+    out = []
+    for kind in ("refresh", "investigate"):
+        out += sorted((r for r in rows if r.get("kind") == kind), key=lambda r: r.get("finished_at", ""))[-per_kind:]
+    return out
+
+
 def export(path: Path | None = None) -> dict:
     """Writes the small, deployable snapshot: events (short quote, title, link) and search coverage only."""
     v = _raw_view()
     snap = {"saved_at": v["saved_at"], "articles": v["articles"], "extracted": v["extracted"],
-            "coverage": {c: sorted(ms) for c, ms in sorted(v["coverage"].items())}, "events": events()}
+            "coverage": {c: sorted(ms) for c, ms in sorted(v["coverage"].items())}, "events": events(),
+            "live_runs": _live_runs_for_snapshot()}
     out = path or SNAPSHOT
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(snap, ensure_ascii=False, indent=0), encoding="utf-8")

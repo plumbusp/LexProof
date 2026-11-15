@@ -12,7 +12,8 @@ How a level is made:
 3. Code turns facts into the level (rel_level). AI never sets the level.
 
   python -m app.relevance --dry-run     what the agent would get, and levels from code-only facts
-  python -m app.relevance --run         one Exa Agent run for the profile (spends credits; budget-capped)
+  python -m app.relevance --run         one Exa Agent run on NEW signals only (skipped if none; budget-capped)
+  python -m app.relevance --run --all   one run on every recent signal
 """
 import argparse
 import json
@@ -112,19 +113,23 @@ def rel_level(s: dict) -> int:
 
 
 def why(s: dict, profile: dict) -> list[str]:
-    """Short reasons shown on the card (at most 4)."""
+    """Short reasons shown on the card, in plain words (at most 4)."""
     out = []
     if s["same_country"]:
         out.append(f"In {profile['name']}")
     elif s["reached"]:
-        out.append(f"Trend seen in {profile['name']}" if s["trend"] else f"Same wave hit {profile['name']}")
+        out.append(f"Same trend seen in {profile['name']}" if s["trend"]
+                   else f"Also reported in {profile['name']} (source checked)")
     elif s["neighbour"]:
-        out.append("Next door")
-    out.append("Same channel" if s["same_channel"] else "Other channel")
+        out.append(f"Next door to {profile['name']}")
+    if s["media_only"]:
+        out.append("Aimed at newsrooms")
+    else:
+        out.append("Hits councils, schools or courts" if s["same_channel"] else "Not aimed at public bodies")
     if s["campaign"]:
-        out.append("Campaign signal")
+        out.append("Officials call it coordinated")
     if s["recent"]:
-        out.append("Last 90 days")
+        out.append("From the last 90 days")
     else:
         out = out[:3] + ["Older than 90 days: one level lower"]
     return out[:4]
@@ -165,55 +170,73 @@ def agent_query(profile: dict) -> str:
             f"Return one item per input signal, using its id. Be conservative.")
 
 
-def run(code: str = "GB", effort: str = "low", max_cost: float = 1.0) -> dict:
+def new_signals(code: str = "GB", evs: list[dict] | None = None) -> list[dict]:
+    """Agent input for signals that have no saved fact yet (new since the last run)."""
     from . import threatstore as ts
-    from .sources.exa_src import _exa
-    from .threatdeep import RAW_DIR, _plain, fetch_pages, _norm_url
+    done = facts(code)
+    return [x for x in agent_input(ts.events() if evs is None else evs, PROFILES[code]) if x["id"] not in done]
+
+
+def run(code: str = "GB", effort: str = "low", max_cost: float = 1.0, incremental: bool = True, client=None) -> dict:
+    """One Exa Agent run. incremental (default): only signals with no saved fact; nothing new -> no run, $0.
+    The answer is MERGED into relevance_<code>.json, so facts for signals not sent again are kept."""
+    from . import exacall, pages
+    from .threatdeep import fetch_pages
     profile = PROFILES[code]
-    data = agent_input(ts.events(), profile)
-    client = _exa()
-    kw = {"query": agent_query(profile), "input": {"data": data}, "output_schema": SCHEMA, "effort": effort,
-          "metadata": {"app": "lexproof", "profile": code}}
+    from . import threatstore as ts
+    data = new_signals(code) if incremental else agent_input(ts.events(), profile)
+    if not data:
+        res = {"skipped": True, "reason": "no new signals", "sent": 0, "cost_usd": 0.0}
+        print(res)
+        return res
+    run_b = exacall.Run(max_cost)
+    body = {"query": agent_query(profile), "input": {"data": data}, "outputSchema": SCHEMA, "effort": effort,
+            "metadata": {"app": "lexproof", "profile": code}}
     if effort in ("auto", "ultra"):
-        kw["budget"] = {"maxCostDollars": max(1.0, max_cost)}
+        body["budget"] = {"maxCostDollars": max(1.0, max_cost)}
     t0 = time.time()
-    r = client.agent.runs.create(**kw)
-    print(f"agent run {r.id} started with {len(data)} signals", flush=True)
-    while r.status in ("queued", "running") and time.time() - t0 < 900:
-        time.sleep(5)
-        r = client.agent.runs.get(r.id)
-        print(f"  {r.status} {int(time.time() - t0)}s", flush=True)
-    d = RAW_DIR / "agent"
-    d.mkdir(parents=True, exist_ok=True)
-    (d / f"{r.id}.json").write_text(json.dumps({"request": {**kw, "input": {"data": data}}, "response": _plain(r)},
-                                               ensure_ascii=False, indent=1, default=str), encoding="utf-8")
-    if r.status != "completed":
-        raise SystemExit(f"agent run {r.status}: {getattr(r.error, 'message', '')}")
-    out = (r.output.structured or {}) if r.output else {}
+    print(f"agent run with {len(data)} new signals", flush=True)
+    r = exacall.agent(body, run=run_b, client=client, max_wait=900, poll=5,
+                      on_progress=lambda s, **k: print(f"  {s} {k}", flush=True))
+    if r.get("status") != "completed":
+        raise SystemExit(f"agent run {r.get('status')}: {(r.get('error') or {}).get('message', '')}")
+    out = (r.get("output") or {}).get("structured") or {}
+    if isinstance(out, str):
+        try:
+            out = json.loads(out)
+        except ValueError:
+            out = {}
     items = {str(x.get("id")): x for x in out.get("signals", []) if isinstance(x, dict)}
     known = {x["id"] for x in data}
     types = {x["id"]: x["type"] for x in data}
     # "reached" is only kept if the cited page is fetched and names the country (no source, no claim).
     urls = sorted({x.get("evidence_url") for x in items.values() if x.get("reached") and str(x.get("evidence_url", "")).startswith("http")})
-    pages = fetch_pages(client, urls) if urls else {}
+    got = fetch_pages(client, urls, run=run_b) if urls else {}
     facts_out = {}
     for i, x in items.items():
         if i not in known:
             continue
-        page = pages.get(_norm_url(x.get("evidence_url", "")), {})
+        page = got.get(pages.norm(x.get("evidence_url", "")), {})
         ok = bool(x.get("reached") and profile["names"].search(page.get("title", "") + " " + page.get("text", "")))
         facts_out[i] = {"signal_type": types.get(i), "same_channel": bool(x.get("same_channel")), "reached_claimed": bool(x.get("reached")),
                         "reached_verified": ok, "evidence_url": x.get("evidence_url") if ok else "",
-                        "note": str(x.get("note") or "")[:200]}
-    cost = getattr(r.cost_dollars, "total", None) if r.cost_dollars else None
-    file_for(code).write_text(json.dumps({"profile": code, "run_id": r.id, "created": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-                                          "cost_usd": cost, "signals_sent": len(data), "facts": facts_out},
-                                         ensure_ascii=False, indent=1), encoding="utf-8")
+                        "note": str(x.get("note") or "")[:200], "run_id": r.get("id")}
+    cost = (r.get("costDollars") or {}).get("total")
+    f = file_for(code)
+    old = json.loads(f.read_text(encoding="utf-8")) if f.exists() else {}
+    merged = {**(old.get("facts") or {}), **facts_out}
+    runs = list(old.get("runs") or ([{"run_id": old["run_id"], "created": old.get("created"), "cost_usd": old.get("cost_usd"),
+                                      "signals_sent": old.get("signals_sent")}] if old.get("run_id") else []))
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    runs.append({"run_id": r.get("id"), "created": now, "cost_usd": cost, "signals_sent": len(data), "incremental": incremental})
+    f.write_text(json.dumps({"profile": code, "run_id": r.get("id"), "created": now, "cost_usd": cost,
+                             "signals_sent": len(data), "runs": runs, "facts": merged},
+                            ensure_ascii=False, indent=1), encoding="utf-8")
     _facts.cache_clear()
-    res = {"run_id": r.id, "sent": len(data), "answered": len(facts_out), "cost_usd": cost, "seconds": int(time.time() - t0),
+    res = {"run_id": r.get("id"), "sent": len(data), "answered": len(facts_out), "cost_usd": cost, "seconds": int(time.time() - t0),
            "reached_claimed": sum(f["reached_claimed"] for f in facts_out.values()),
-           "reached_verified": sum(f["reached_verified"] for f in facts_out.values())}
-    print(res)
+           "reached_verified": sum(f["reached_verified"] for f in facts_out.values()), "facts_total": len(merged)}
+    print(res, exacall.summary(run_b))
     return res
 
 
@@ -223,7 +246,8 @@ def dry_run(code: str = "GB") -> None:
     profile = PROFILES[code]
     evs = ts.events()
     data = agent_input(evs, profile)
-    print(f"DRY RUN for {profile['country']}: the agent would get {len(data)} signals ({len(json.dumps(data)):,} chars).")
+    print(f"DRY RUN for {profile['country']}: {len(data)} recent signals, {len(new_signals(code, evs))} new since the last run "
+          f"(an incremental run sends only those; {len(json.dumps(data)):,} chars for all).")
     print("Query:\n" + agent_query(profile))
     lv = collections.Counter(score(e, profile)["rel"] for e in evs)
     print("\nLevels with code-only facts:", {k: lv[k] for k in (5, 4, 3, 2, 1)})
@@ -235,5 +259,6 @@ if __name__ == "__main__":
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--profile", default="GB")
     ap.add_argument("--effort", default="low")
+    ap.add_argument("--all", action="store_true", help="send every recent signal, not only new ones")
     a = ap.parse_args()
-    run(a.profile, a.effort) if a.run else dry_run(a.profile) if a.dry_run else ap.print_help()
+    run(a.profile, a.effort, incremental=not a.all) if a.run else dry_run(a.profile) if a.dry_run else ap.print_help()

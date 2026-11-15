@@ -13,7 +13,7 @@ This is a **pitch visual attached to the complaint checker**, not a second produ
 1. **No source, no dot.** Every event needs a URL and a short quote copied from the page.
 2. **Code sets the evidence level, Gemini never does.** Gemini only extracts fields from text. A plain rule in code turns the fields into level 0 to 4.
 3. **Level 0 is "nothing found", drawn hatched grey. Never green, never "safe".** Countries not yet searched are labelled "not searched".
-4. **Scope of countries:** EU-27 plus the UK and Switzerland. Ukraine, Kosovo, Serbia, Moldova are not drawn and no dots for them.
+4. **Scope of countries:** geographic Europe, 42 countries: EU-27, the UK, Switzerland, Norway, Iceland, Liechtenstein, the microstates, the Western Balkans and Moldova. Ukraine, Russia, Belarus, Turkey and Kosovo are not in the data; drawn as not covered, with no dots.
 5. **Dates come from the Exa date fields (`startPublishedDate`, `endPublishedDate`), not from words in the query.** Writing "October 2026" in the query text does not filter anything (tested).
 6. **Do not call a surge "foreign" without an official or multi-source attribution.** A rise in complaints alone is level 0 for the hostile layer.
 7. No clustering, no wave layer, no similar-case finder (cut on Saturday, see project memory).
@@ -72,7 +72,7 @@ Precursor layer seed (AI complaints by real people, **not** hostile): UK (Wiltsh
 1. Latvia is level 2, T3, and its panel shows the BB.LV quote and link.
 2. Bulgaria is level 2, T5, and the panel says "hypothesis, no attribution".
 3. Hungary and Northern Ireland are level 1 with a visible "unverified source" tag.
-4. Ukraine, Kosovo, Serbia and Moldova are not on the map and no dot sits there.
+4. Ukraine, Russia, Belarus, Turkey and Kosovo are drawn grey as "Not covered in this demo", are not clickable, and no dot sits there.
 5. Switzerland and Ireland show hatched grey with "not searched".
 6. No dot exists without a URL and a quote.
 7. Switching to the precursor layer lights up UK, Germany, NL, BE, SE, FI and does **not** use hostile-event colours.

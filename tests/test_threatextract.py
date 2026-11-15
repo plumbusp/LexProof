@@ -21,8 +21,8 @@ def test_quote_with_gaps_and_other_quote_marks():
 
 
 def test_out_of_scope_countries_are_dropped():
-    assert tx.verify(item(countries=["Serbia"]), ART) is None
-    assert tx.verify(item(countries=["Serbia", "Italy"]), ART)["countries"] == ["Italy"]
+    assert tx.verify(item(countries=["Ukraine"]), ART) is None
+    assert tx.verify(item(countries=["Ukraine", "Italy"]), ART)["countries"] == ["Italy"]
 
 
 def test_not_an_event_and_layer_type_mismatch_dropped():
