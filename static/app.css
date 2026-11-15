@@ -401,12 +401,14 @@ body[data-view="home"] .topbar { background: color-mix(in srgb, var(--panel) 70%
 .map-hero-top { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
 /* "UK view · Demo": the top bar's black DEMO tag, same font and colours */
 .ws-tag { margin-left: 0; }
-.map-title-row { display: inline-flex; flex-direction: column; align-items: flex-start; max-width: 100%; }
-/* hand-drawn note under the title, same arc as the home page; the arrow points up at the title */
-.map-title-note { align-self: flex-end; display: flex; flex-direction: column; align-items: flex-start; margin-right: 12px; }
-.map-title-note .demo-arc { margin-left: 8px; }
-.map-title-note .demo-arc path { fill: none; stroke: var(--muted); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
-.map-title-note p { margin: 2px 0 0; font: italic 400 19px/1.4 var(--serif); color: var(--text-2); max-width: 30ch; }
+.map-title-row { display: flex; align-items: flex-start; gap: 0; }
+.map-title-row .map-title { flex: none; }
+@media (max-width: 1000px) { .map-title-row { flex-wrap: wrap; } .note-arc { display: none; } .map-title-note p { margin: 6px 0 0; } }
+/* hand-drawn note beside the title: the arc leaves the text and curls back to point at the title */
+.map-title-note { display: flex; align-items: flex-start; }
+.note-arc { flex: none; display: block; margin: 8px 0 0 14px; overflow: visible; filter: drop-shadow(0 0 3px var(--bg)); }
+.note-arc path { fill: none; stroke: var(--muted); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.map-title-note p { margin: 24px 0 0 4px; font: italic 400 19px/1.4 var(--serif); color: var(--text-2); max-width: 30ch; }
 .map-title { margin: 0; font: 400 28px/1.15 var(--serif); letter-spacing: -.01em; color: var(--text); text-wrap: balance; }
 .map-hero .lede { font-size: 16px; }
 .map-hero .fine { margin: 0; }
