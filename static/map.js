@@ -195,7 +195,7 @@
     g.replaceChildren();
     for (const [name, c] of Object.entries(data.countries)) {
       const n = c.events.filter((e) => e.type !== "T6").length, media = c.events.length - n, at = centroids[name];
-      if (!at || !c.events.length) continue;
+      if (!at || !c.events.length || !(c.level >= 3 || name === selected)) continue; // numbers only where they matter (level 3+) or on the selected country
       if (n) g.append(marker("circle", at[0], at[1], n));
       if (media) g.append(marker("diamond", at[0] + (n ? 16 : 0), at[1] + (n ? 6 : 0), media));
       if (c.events.some(isNew)) g.append(newMark(at[0], at[1]));
@@ -230,7 +230,7 @@
     const g = document.createElementNS(NS, "g");
     g.setAttribute("class", "marker " + kind);
     const shape = document.createElementNS(NS, kind === "circle" ? "circle" : "rect");
-    if (kind === "circle") { shape.setAttribute("cx", x); shape.setAttribute("cy", y); shape.setAttribute("r", 9); }
+    if (kind === "circle") { shape.setAttribute("cx", x); shape.setAttribute("cy", y); shape.setAttribute("r", 8); }
     else { shape.setAttribute("x", x - 8); shape.setAttribute("y", y - 8); shape.setAttribute("width", 16); shape.setAttribute("height", 16); shape.setAttribute("transform", `rotate(45 ${x} ${y})`); }
     const t = document.createElementNS(NS, "text");
     t.setAttribute("x", x); t.setAttribute("y", y + 3.5); t.setAttribute("text-anchor", "middle"); t.textContent = n;
@@ -256,10 +256,11 @@
   function renderLegend() {
     const unsearched = Object.values(data.countries).some((c) => !c.searched);
     $("#legend").innerHTML = [5, 4, 3, 2, 1].map((n) => `<span class="legend-item" title="${esc(REL[n].why)}"><span class="sw r${n}"></span>${n} · ${esc(REL[n].name)}</span>`).join("")
-      + `<span class="legend-item" title="${esc(COUNTRY_NONE)}"><span class="sw sw-hatch"></span>No reports found (not proof of safety)</span>`
-      + (unsearched ? `<span class="legend-item"><span class="sw sw-ns"></span>Not searched in this window</span>` : "")
-      + `<span class="legend-item"><span class="sw sw-out"></span>Not covered in this demo</span>`
-      + `<span class="legend-item"><span class="sw-dot">2</span>Number of reports</span>`
+     
+      + `<span class="legend-item" title="${esc(COUNTRY_NONE)}"><span class="sw sw-hatch"></span>None found (not proof of safety)</span>`
+      + (unsearched ? `<span class="legend-item"><span class="sw sw-ns"></span>Not searched</span>` : "")
+      + `<span class="legend-item"><span class="sw sw-out"></span>Not covered</span>`
+      + `<span class="legend-item"><span class="sw-dot">2</span>Reports (shown at level 3+)</span>`
       + `<span class="legend-item"><span class="sw-dia"></span>Reports about newsrooms</span>`;
   }
 

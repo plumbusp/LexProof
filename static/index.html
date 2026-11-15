@@ -223,26 +223,25 @@
   <header class="map-hero">
     <div class="map-hero-top">
       <p class="eyebrow">Regional Abuse Map</p>
-      <span class="demo-tag ws-tag" title="Demo view for one UK council. A council in another country sees its own levels.">UK view for Camden Council · Demo</span>
+      <span class="demo-tag ws-tag" title="Demo view for one UK council. A council in another country sees its own levels.">Camden Council · Demo</span>
       <button type="button" class="btn live-btn" id="live-24h" title="One live Exa search of news from all 42 countries, published in the last 24 hours.">
         <span class="icon">travel_explore</span>Check the last 24 hours</button>
     </div>
     <p class="fine live-line" id="live-line" aria-live="polite"></p>
     <ol class="live-steps" id="live-steps" aria-live="polite" hidden></ol>
     <h2 class="map-title">What in Europe matters to UK public bodies</h2>
-    <p class="lede">How much each <b class="hl-threat">threat flood</b> (mass threat emails, coordinated complaint campaigns)
-      and each <b class="hl-complaint">complaint flood</b> (people sending long AI-written complaints and requests) reported in Europe
-      matters to <b class="hl-uk">UK councils, schools, the NHS and ombudsmen</b>.</p>
-    <ul class="map-how" aria-label="How it works">
-      <li><b>Fetch.</b> <b class="hl-exa">Exa</b> searches the web for these reports in each country's own language, reads every article and checks each quote on the real page.</li>
-      <li><b>Filter.</b> An <b class="hl-exa">Exa Agent</b> (AI) checks each report against one question: does this matter to <b class="hl-uk">UK public bodies like Camden Council</b>? Fixed rules turn its findings into a level from 1 to 5.</li>
-      <li><b>Show.</b> One map of Europe for Camden Council. <b class="hl-uk">5 · Act now</b> means it is hitting UK services now; older than 90 days drops one level.</li>
-    </ul>
-    <p class="fine">Demo. A council in France or Finland gets its own view of the same reports, with its own levels.</p>
+    <p class="lede">Reported waves of threat emails and AI-written complaints across Europe, ranked by how much each matters to UK councils, schools, the NHS and ombudsmen.</p>
+    <details class="map-how">
+      <summary>How it works</summary>
+      <ul>
+        <li><b>Fetch.</b> Exa searches the web for these reports in each country's own language, reads every article and checks each quote on the real page.</li>
+        <li><b>Filter.</b> An Exa Agent checks each report against one question: does this matter to UK public bodies like Camden Council? Fixed rules turn its findings into a level from 1 to 5.</li>
+        <li><b>Show.</b> Level 5 means it is hitting UK services now. Reports older than 90 days drop one level. A council in France or Finland would get its own levels.</li>
+      </ul>
+    </details>
   </header>
 
   <div class="map-controls">
-    <div class="legend" id="legend" aria-label="Legend"></div>
     <div class="range">
       <label>From <select id="map-from"></select></label>
       <label>To <select id="map-to"></select></label>
@@ -256,8 +255,9 @@
   <div class="map-layout">
     <section class="card map-card">
       <div class="map-status fine" id="map-status">Loading map…</div>
-      <p class="map-hint fine">Click a country to see its reports. Click a report's source to read it. Level = how much it matters to UK public bodies today, from 5 (act now) to 1 (not relevant).</p>
+      <p class="map-hint fine">Click a country to see its reports.</p>
       <div class="map-canvas" id="map-canvas"></div>
+      <div class="legend" id="legend" aria-label="Legend"></div>
     </section>
     <aside class="card map-side" id="map-side">
       <div class="empty">Loading the reports that matter most to the UK…</div>
