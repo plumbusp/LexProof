@@ -369,9 +369,6 @@ body[data-view="home"] .topbar { background: color-mix(in srgb, var(--panel) 70%
 .ev-target { font-size: 13px; font-weight: 500; }
 .ev-tags { display: flex; flex-wrap: wrap; gap: 4px; }
 .tag { padding: 1px 6px; font-size: 10px; color: var(--muted); border: 1px solid var(--border-strong); background: var(--subtle); }
-:root { --org-dark: #E2E8F0; }   /* one shade darker than the Camden badge (--subtle) */
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --org-dark: #13171D; } }
-:root[data-theme="dark"] { --org-dark: #13171D; }
 :root { --r1: #F1E7E2; --r2: #F6C3A8; --r3: #EC8A5C; --r4: #CF4F25; --r5: #8F2A12;
   --hl-threat: #B4421C; --hl-complaint: #2A5BA8; --hl-uk: #6B2FA3; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --r1: #2E2623; --r2: #5E3424; --r3: #9C4528; --r4: #D9643A; --r5: #F49A73;
@@ -386,14 +383,11 @@ body[data-view="home"] .topbar { background: color-mix(in srgb, var(--panel) 70%
 /* Map page header: the home page's type (eyebrow, serif title, serif lede), without the scroll story. */
 .map-hero { display: flex; flex-direction: column; gap: 12px; max-width: 860px; padding: 8px 0 4px; }
 .map-hero-top { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+/* "UK view · Demo": the top bar's black DEMO tag, same font and colours */
+.ws-tag { margin-left: 0; }
 .map-title { margin: 0; font: 400 32px/1.15 var(--serif); letter-spacing: -.01em; color: var(--text); text-wrap: balance; }
 .map-hero .lede { font-size: 16px; }
 .map-hero .fine { margin: 0; }
-.ws-badge { display: inline-flex; align-items: center; gap: 12px; }
-/* Same box as the "Camden Council" workspace badge in the top bar, one shade darker. */
-.org.org-dark { background: var(--org-dark); border-color: var(--border-strong); color: var(--text); }
-.ws-badge .demo-tag { margin-left: -6px; }
-.ws-badge .org.org-dark { display: inline-block; }   /* the top-bar badge hides on phones; this one must not */
 .hl-threat { color: var(--hl-threat); } .hl-complaint { color: var(--hl-complaint); } .hl-uk { color: var(--hl-uk); }
 .rel-chip { padding: 1px 6px; font: 600 10px var(--mono); color: var(--text); border: 1px solid var(--border-strong); }
 .rel-chip.r4, .rel-chip.r5 { color: #fff; border-color: transparent; } .rel-chip.r5 { background: var(--r5); } .rel-chip.r4 { background: var(--r4); }

@@ -18,7 +18,8 @@
   ];
   const SHAPES = "https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-50m.json";
   const W = 800, H = 760, NS = "http://www.w3.org/2000/svg";
-  const TYPE_NAMES = { T3: "T3 · Mass complaints", T5: "T5 · Threat emails", T6: "T6 · Media targets", AI: "AI complaints" };
+  // Shown by name only. The codes (T3, T5, T6) stay in the data; they come from the plan's taxonomy, where T1, T2 and T4 are unused.
+  const TYPE_NAMES = { T3: "Mass complaints", T5: "Threat emails", T6: "Media targets", AI: "AI complaints" };
 
   // Relevance to the UK, 1-5. Set by fixed rules in app/relevance.py from facts; never by AI.
   const REL = {
